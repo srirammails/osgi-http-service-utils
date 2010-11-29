@@ -9,19 +9,23 @@ import javax.servlet.ServletResponse;
 public interface HttpRequestInterceptor
 {
 
-  /** 
-   * Method is invokes before the request starts.
-   * @param req servlet http request.
-   * @param res servket http response
-   * @return when true the next request interceptor will be invoked or the request servlet.
+  /**
+   * Method is invoked before the request chain starts.
+   * 
+   * @param req the javax.servlet http request.
+   * @param res the javax.servlet http response.
+   * @return when true the next request interceptor will be invoked or
+   *         the request processing starts.
    */
   public boolean beforeRequest(ServletRequest req, ServletResponse res);
 
-  /** 
-   * Method is invokes before the request starts.
-   * @param req servlet http request.
-   * @param res servket http response
-   * @return when true the next request interceptor will be invoked or the response is send to the client.
+  /**
+   * Method is invoked after the request processing.
+   * 
+   * @param req the javax.servlet http request.
+   * @param res the javax.servlet http response
+   * @return when true the next request interceptor will be invoked or
+   *         the response is send to the client.
    */
   public boolean afterRequest(ServletRequest req, ServletResponse res);
 
