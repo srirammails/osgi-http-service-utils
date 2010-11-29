@@ -1,0 +1,9 @@
+HTTP-Service:
+The project is OSGi HTTP Service Utils project. This project is based on the source from the eclipse HTTP equinox bundle (see http://www.eclipse.org/equinox/).
+
+The project extends the default HTTP equinox service (source) in following points:
+1.) The project contains a OSGi activator class which starts two OSGi HTTP services default ports are 8080 and 9090.
+2.) The project contains a logic for request interceptors. 
+
+The project is publishes under the EPL - the Eclipse Public License - v 1.0
+see http://www.eclipse.org/legal/epl-v10.html
