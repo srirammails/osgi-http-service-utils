@@ -9,13 +9,14 @@
  * IBM Corporation - bug fixes and enhancements
  *******************************************************************************/
 
-package org.eclipselabs.osgihttpserviceutils.httpservice;
+package org.eclipselabs.osgihttpserviceutils.httpservice.internal;
 
 import java.io.File;
 import java.lang.reflect.Method;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
+import org.eclipselabs.osgihttpserviceutils.httpservice.HttpRequestInterceptor;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
