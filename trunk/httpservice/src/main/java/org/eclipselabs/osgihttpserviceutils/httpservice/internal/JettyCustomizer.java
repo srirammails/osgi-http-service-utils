@@ -8,7 +8,7 @@
  * Contributors: Gunnar Wagenknecht - initial API and implementation
  * IBM Corporation - improvements and ongoing maintenance
  *******************************************************************************/
-package org.eclipselabs.osgihttpserviceutils.httpservice;
+package org.eclipselabs.osgihttpserviceutils.httpservice.internal;
 
 import java.util.Dictionary;
 

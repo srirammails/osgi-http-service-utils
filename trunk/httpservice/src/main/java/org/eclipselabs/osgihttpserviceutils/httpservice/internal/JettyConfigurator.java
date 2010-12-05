@@ -7,7 +7,7 @@
  * 
  * Contributors: IBM Corporation - initial API and implementation
  *******************************************************************************/
-package org.eclipselabs.osgihttpserviceutils.httpservice;
+package org.eclipselabs.osgihttpserviceutils.httpservice.internal;
 
 import java.security.Permission;
 import java.util.Dictionary;

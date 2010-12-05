@@ -1,4 +1,4 @@
-package org.eclipselabs.osgihttpserviceutils.httpservice;
+package org.eclipselabs.osgihttpserviceutils.httpservice.internal;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +17,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.eclipse.equinox.http.servlet.HttpServiceServlet;
+import org.eclipselabs.osgihttpserviceutils.httpservice.HttpRequestInterceptor;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.bio.SocketConnector;
