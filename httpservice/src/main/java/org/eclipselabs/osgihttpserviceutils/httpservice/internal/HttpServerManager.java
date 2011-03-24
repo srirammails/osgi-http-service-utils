@@ -107,6 +107,7 @@ public class HttpServerManager implements ManagedServiceFactory
   /**
    *  There are two modes for configuration the jetty server via the JettyCustomizer therefore see {@link JettyCustomizer}.
    *  And the other mode is via XML configuration, there the follow system properties must be set: 
+   *  
    * -Djetty.xml.configuration=true
    * -Djetty.xml.configuration.external="D:\\tmp\\jetty.xml"
    * -Djetty.xml.configuration.internal="D:\\tmp\\jetty-internal.xml"
@@ -597,15 +598,15 @@ public class HttpServerManager implements ManagedServiceFactory
               return;
             }
           }
-          catch (Exception e)
+          catch (Exception exp)
           {
-            e.printStackTrace();
+            logger.warn("A exception was thrown on invoking a request interceptor", exp);
           }
         }
       }
-      catch (Exception e)
+      catch (Exception exp)
       {
-        e.printStackTrace();
+        logger.warn("A exception was thrown on invoking a request interceptor", exp);
       }
       try
       {
@@ -627,15 +628,15 @@ public class HttpServerManager implements ManagedServiceFactory
               return;
             }
           }
-          catch (Exception e)
+          catch (Exception exp)
           {
-            e.printStackTrace();
+            logger.warn("A exception was thrown on invoking a interceptor after request.", exp);
           }
         }
       }
-      catch (Exception e)
+      catch (Exception exp)
       {
-        e.printStackTrace();
+        logger.warn("A exception was thrown on invoking a interceptor after request.", exp);
       }
     }
 
