@@ -1,6 +1,8 @@
 package org.eclipselabs.osgihttpserviceutils.httpservice.internal;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Dictionary;
 import java.util.HashMap;
@@ -27,23 +29,25 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.HashSessionManager;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.jetty.servlet.SessionHandler;
+import org.mortbay.xml.XmlConfiguration;
 import org.osgi.framework.Constants;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
 
 public class HttpServerManager implements ManagedServiceFactory
 {
 
-  private static Logger logger = LoggerFactory.getLogger(HttpServerManager.class);
+  private static Logger logger = LoggerFactory
+      .getLogger(HttpServerManager.class);
 
   private static final String CONTEXT_TEMPDIR = "javax.servlet.context.tempdir"; //$NON-NLS-1$
 
   private static final String DIR_PREFIX = "pid_"; //$NON-NLS-1$
 
-  private static final String INTERNAL_CONTEXT_CLASSLOADER =
-      "org.eclipse.equinox.http.jetty.internal.ContextClassLoader"; //$NON-NLS-1$
+  private static final String INTERNAL_CONTEXT_CLASSLOADER = "org.eclipse.equinox.http.jetty.internal.ContextClassLoader"; //$NON-NLS-1$
 
   @SuppressWarnings("rawtypes")
   private final Map servers = new HashMap();
@@ -55,14 +59,14 @@ public class HttpServerManager implements ManagedServiceFactory
   /**
    * Creates a new {@link HttpServerManager}
    * 
-   * @param requestContextServiceImpl
-   *          a {@link RequestContextServiceImpl}
-   * @param requestInterceptors
-   *          a list of {@link HttpRequestInterceptor}s
-   * @param workDir
-   *          the working directory
+   * @param requestContextServiceImpl a
+   *        {@link RequestContextServiceImpl}
+   * @param requestInterceptors a list of
+   *        {@link HttpRequestInterceptor}s
+   * @param workDir the working directory
    */
-  public HttpServerManager(List<HttpRequestInterceptor> requestInterceptors, File workDir)
+  public HttpServerManager(List<HttpRequestInterceptor> requestInterceptors,
+      File workDir)
   {
     this.requestInterceptors = requestInterceptors;
     this.workDir = workDir;
@@ -101,72 +105,127 @@ public class HttpServerManager implements ManagedServiceFactory
   }
 
   /**
+   *  There are two modes for configuration the jetty server via the JettyCustomizer therefore see {@link JettyCustomizer}.
+   *  And the other mode is via XML configuration, there the follow system properties must be set: 
+   * -Djetty.xml.configuration=true
+   * -Djetty.xml.configuration.external="D:\\tmp\\jetty.xml"
+   * -Djetty.xml.configuration.internal="D:\\tmp\\jetty-internal.xml"
+   * 
    * {@inheritDoc}
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public synchronized void updated(String pid, Dictionary dictionary) throws ConfigurationException
+  public synchronized void updated(String pid, Dictionary dictionary)
+      throws ConfigurationException
   {
     deleted(pid);
     Server server = new Server();
 
-    JettyCustomizer customizer = createJettyCustomizer(dictionary);
-
-    Connector httpConnector = createHttpConnector(dictionary);
-    if (null != customizer)
-    {
-      httpConnector = (Connector) customizer.customizeHttpConnector(httpConnector, dictionary);
-    }
-
-    if (httpConnector != null)
-    {
-      server.addConnector(httpConnector);
-    }
-
-    Connector httpsConnector = createHttpsConnector(dictionary);
-    if (null != customizer)
-    {
-      httpsConnector = (Connector) customizer.customizeHttpsConnector(httpsConnector, dictionary);
-    }
-    if (httpsConnector != null)
-    {
-      server.addConnector(httpsConnector);
-    }
-
-    ServletHolder holder =
-        new ServletHolder(new InternalHttpServiceServlet(this.requestInterceptors));
+    ServletHolder holder = new ServletHolder(new InternalHttpServiceServlet(
+        requestInterceptors));
     holder.setInitOrder(0);
     holder.setInitParameter(Constants.SERVICE_VENDOR, "Eclipse.org"); //$NON-NLS-1$
-    holder.setInitParameter(Constants.SERVICE_DESCRIPTION, "Equinox Jetty-based Http Service"); //$NON-NLS-1$
+    holder.setInitParameter(Constants.SERVICE_DESCRIPTION,
+        "Equinox Jetty-based Http Service"); //$NON-NLS-1$
     holder.setInitParameter(HttpServiceActivator.EXTERNAL_HTTP_SERVICE,
         (String) dictionary.get(HttpServiceActivator.EXTERNAL_HTTP_SERVICE));
-    if (httpConnector != null)
-    {
-      int port = httpConnector.getLocalPort();
-      if (port == -1)
-      {
-        port = httpConnector.getPort();
-      }
-      holder.setInitParameter(JettyConstants.HTTP_PORT, Integer.toString(port));
-    }
-    if (httpsConnector != null)
-    {
-      int port = httpsConnector.getLocalPort();
-      if (port == -1)
-      {
-        port = httpsConnector.getPort();
-      }
-      holder.setInitParameter(JettyConstants.HTTPS_PORT, Integer.toString(port));
-    }
-    String otherInfo = (String) dictionary.get(JettyConstants.OTHER_INFO);
-    if (otherInfo != null)
-    {
-      holder.setInitParameter(JettyConstants.OTHER_INFO, otherInfo);
-    }
+    
+    JettyCustomizer customizer = createJettyCustomizer(dictionary);
 
+    if (isXmlConfiguration())
+    {
+      try
+      {
+        if (isExternalHttpService(dictionary))
+        {
+          String externalJettyConfiguration = System.getProperty("jetty.xml.configuration.external");
+          XmlConfiguration configuration = new XmlConfiguration(
+              new FileInputStream(externalJettyConfiguration));
+          configuration.configure(server);
+        }
+        else
+        {
+          String internalJettyConfiguration = System.getProperty("jetty.xml.configuration.internal");
+          XmlConfiguration configuration = new XmlConfiguration(
+              new FileInputStream(internalJettyConfiguration));
+          configuration.configure(server);
+        }
+      }
+      catch (FileNotFoundException exp)
+      {
+        logger.error("Could not start the HTTP Server", exp);
+      }
+      catch (SAXException exp)
+      {
+        logger.error("Could not start the HTTP Server", exp);
+      }
+      catch (IOException exp)
+      {
+        logger.error("Could not start the HTTP Server", exp);
+      }
+      catch (Exception exp)
+      {
+        logger.error("Could not start the HTTP Server", exp);
+      }
+    }
+    else
+    {
+      Connector httpConnector = createHttpConnector(dictionary);
+      if (null != customizer)
+      {
+        httpConnector = (Connector) customizer.customizeHttpConnector(
+            httpConnector, dictionary);
+        httpConnector.setHeaderBufferSize(16192);
+      }
+
+      if (httpConnector != null)
+      {
+        server.addConnector(httpConnector);
+      }
+
+      Connector httpsConnector = createHttpsConnector(dictionary);
+      if (null != customizer)
+      {
+        httpsConnector = (Connector) customizer.customizeHttpsConnector(
+            httpsConnector, dictionary);
+      }
+      if (httpsConnector != null)
+      {
+        server.addConnector(httpsConnector);
+      }
+
+      if (httpConnector != null)
+      {
+        int port = httpConnector.getLocalPort();
+        if (port == -1)
+        {
+          port = httpConnector.getPort();
+        }
+        holder.setInitParameter(JettyConstants.HTTP_PORT,
+            Integer.toString(port));
+      }
+      if (httpsConnector != null)
+      {
+        int port = httpsConnector.getLocalPort();
+        if (port == -1)
+        {
+          port = httpsConnector.getPort();
+        }
+        holder.setInitParameter(JettyConstants.HTTPS_PORT,
+            Integer.toString(port));
+      }
+      String otherInfo = (String) dictionary.get(JettyConstants.OTHER_INFO);
+      if (otherInfo != null)
+      {
+        holder.setInitParameter(JettyConstants.OTHER_INFO, otherInfo);
+
+      }
+
+    }
     Context httpContext = createHttpContext(dictionary);
     if (null != customizer)
     {
-      httpContext = (Context) customizer.customizeContext(httpContext, dictionary);
+      httpContext = (Context) customizer.customizeContext(httpContext,
+          dictionary);
     }
 
     httpContext.addServlet(holder, "/*"); //$NON-NLS-1$
@@ -181,6 +240,17 @@ public class HttpServerManager implements ManagedServiceFactory
       throw new ConfigurationException(pid, e.getMessage(), e);
     }
     this.servers.put(pid, server);
+  }
+
+  private boolean isXmlConfiguration()
+  {
+    String jettyXmlConfiguration = System.getProperty("jetty.xml.configuration");
+    return jettyXmlConfiguration != null && jettyXmlConfiguration.equals("true");
+  }
+
+  private boolean isExternalHttpService(Dictionary dictionary)
+  {
+    return dictionary.get("external.http.service").equals("true");
   }
 
   /**
@@ -268,7 +338,8 @@ public class HttpServerManager implements ManagedServiceFactory
       // Note: no problems currently logged with 1.5
       if (javaVersion.equals("1.6.0")) //$NON-NLS-1$
       {
-        String jclVersion = systemProperties.getProperty("java.jcl.version", ""); //$NON-NLS-1$ //$NON-NLS-2$
+        String jclVersion = systemProperties
+            .getProperty("java.jcl.version", ""); //$NON-NLS-1$ //$NON-NLS-2$
         if (jclVersion.startsWith("2007"))
         {
           return Boolean.FALSE;
@@ -286,7 +357,8 @@ public class HttpServerManager implements ManagedServiceFactory
   @SuppressWarnings("rawtypes")
   private Connector createHttpsConnector(Dictionary dictionary)
   {
-    Boolean httpsEnabled = (Boolean) dictionary.get(JettyConstants.HTTPS_ENABLED);
+    Boolean httpsEnabled = (Boolean) dictionary
+        .get(JettyConstants.HTTPS_ENABLED);
     if (httpsEnabled == null || !httpsEnabled.booleanValue())
     {
       return null;
@@ -319,7 +391,8 @@ public class HttpServerManager implements ManagedServiceFactory
       sslConnector.setPassword(password);
     }
 
-    String keyPassword = (String) dictionary.get(JettyConstants.SSL_KEYPASSWORD);
+    String keyPassword = (String) dictionary
+        .get(JettyConstants.SSL_KEYPASSWORD);
     if (keyPassword != null)
     {
       sslConnector.setKeyPassword(keyPassword);
@@ -353,7 +426,8 @@ public class HttpServerManager implements ManagedServiceFactory
       sslConnector.setProtocol(protocol);
     }
 
-    String keystoreType = (String) dictionary.get(JettyConstants.SSL_KEYSTORETYPE);
+    String keystoreType = (String) dictionary
+        .get(JettyConstants.SSL_KEYSTORETYPE);
     if (keystoreType != null)
     {
       sslConnector.setKeystoreType(keystoreType);
@@ -378,25 +452,26 @@ public class HttpServerManager implements ManagedServiceFactory
   private Context createHttpContext(Dictionary dictionary)
   {
     Context httpContext = new Context();
-    httpContext.setAttribute(INTERNAL_CONTEXT_CLASSLOADER, Thread.currentThread()
-        .getContextClassLoader());
+    httpContext.setAttribute(INTERNAL_CONTEXT_CLASSLOADER, Thread
+        .currentThread().getContextClassLoader());
     httpContext.setClassLoader(this.getClass().getClassLoader());
 
-    String contextPathProperty = (String) dictionary.get(JettyConstants.CONTEXT_PATH);
+    String contextPathProperty = (String) dictionary
+        .get(JettyConstants.CONTEXT_PATH);
     if (contextPathProperty == null)
     {
       contextPathProperty = "/"; //$NON-NLS-1$
     }
     httpContext.setContextPath(contextPathProperty);
 
-    File contextWorkDir =
-        new File(this.workDir, DIR_PREFIX + dictionary.get(Constants.SERVICE_PID).hashCode());
+    File contextWorkDir = new File(this.workDir, DIR_PREFIX
+        + dictionary.get(Constants.SERVICE_PID).hashCode());
     contextWorkDir.mkdir();
     httpContext.setAttribute(CONTEXT_TEMPDIR, contextWorkDir);
 
     HashSessionManager sessionManager = new HashSessionManager();
-    Integer sessionInactiveInterval =
-        (Integer) dictionary.get(JettyConstants.CONTEXT_SESSIONINACTIVEINTERVAL);
+    Integer sessionInactiveInterval = (Integer) dictionary
+        .get(JettyConstants.CONTEXT_SESSIONINACTIVEINTERVAL);
     if (sessionInactiveInterval != null)
     {
       sessionManager.setMaxInactiveInterval(sessionInactiveInterval.intValue());
@@ -411,7 +486,8 @@ public class HttpServerManager implements ManagedServiceFactory
   private JettyCustomizer createJettyCustomizer(Dictionary dictionary)
   {
     final String method = "createJettyCustomizer(Dictionary)";
-    String customizerClass = (String) dictionary.get(JettyConstants.CUSTOMIZER_CLASS);
+    String customizerClass = (String) dictionary
+        .get(JettyConstants.CUSTOMIZER_CLASS);
     if (null == customizerClass)
     {
       return null;
@@ -445,12 +521,13 @@ public class HttpServerManager implements ManagedServiceFactory
 
     /**
      * Creates a new {@link InternalHttpServiceServlet}
-     * @param requestContextServiceImpl
-     *          the {@link RequestContextServiceImpl}
-     * @param requestInterceptors
-     *          a list of {@link HttpRequestInterceptor}s
+     * @param requestContextServiceImpl the
+     *        {@link RequestContextServiceImpl}
+     * @param requestInterceptors a list of
+     *        {@link HttpRequestInterceptor}s
      */
-    public InternalHttpServiceServlet(List<HttpRequestInterceptor> requestInterceptors)
+    public InternalHttpServiceServlet(
+        List<HttpRequestInterceptor> requestInterceptors)
     {
       this.requestInterceptors = requestInterceptors;
     }
@@ -462,7 +539,8 @@ public class HttpServerManager implements ManagedServiceFactory
     public void init(ServletConfig config) throws ServletException
     {
       ServletContext context = config.getServletContext();
-      this.contextLoader = (ClassLoader) context.getAttribute(INTERNAL_CONTEXT_CLASSLOADER);
+      this.contextLoader = (ClassLoader) context
+          .getAttribute(INTERNAL_CONTEXT_CLASSLOADER);
 
       Thread thread = Thread.currentThread();
       ClassLoader current = thread.getContextClassLoader();
@@ -501,8 +579,8 @@ public class HttpServerManager implements ManagedServiceFactory
      * {@inheritDoc}
      */
     @Override
-    public void service(ServletRequest req, ServletResponse res) throws ServletException,
-        IOException
+    public void service(ServletRequest req, ServletResponse res)
+        throws ServletException, IOException
     {
       Thread thread = Thread.currentThread();
       ClassLoader current = thread.getContextClassLoader();
