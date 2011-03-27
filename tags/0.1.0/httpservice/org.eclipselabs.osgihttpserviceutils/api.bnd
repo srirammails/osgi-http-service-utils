@@ -1,0 +1,2 @@
+Bundle-Version: 0.1.0
+Export-Package: org.eclipselabs.osgihttpserviceutils.httpservice
