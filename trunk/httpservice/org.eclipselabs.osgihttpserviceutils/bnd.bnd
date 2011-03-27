@@ -20,4 +20,4 @@
 	org.eclipse.equinox.http.servlet
 -runproperties: osgi.console=console
 -sub: *.bnd
-
+Bundle-Version: 0.1.0

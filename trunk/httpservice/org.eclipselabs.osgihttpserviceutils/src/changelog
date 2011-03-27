@@ -1,0 +1,10 @@
+Http Service Utils Version 0.1.0 
+---------------------------------
+The HTTP service Utils Version 0.1.0 contains:
+- multiple OSGi HTTP services via HTTP admin server service API
+- request context handling
+- Jetty configuration via Jetty XML configuration
+- HTTP Request Interceptor
+- separate service API and implementation in separate bundles 
+- change the build tooling to eclipse bndtools
+- add DS support for OSGi service handling via BND annotations
