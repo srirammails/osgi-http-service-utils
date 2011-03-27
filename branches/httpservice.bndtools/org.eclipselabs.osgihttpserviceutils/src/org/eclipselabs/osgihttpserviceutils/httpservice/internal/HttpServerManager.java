@@ -131,18 +131,18 @@ public class HttpServerManager implements ManagedServiceFactory {
 							try {
 								interceptor.beforeRequest();
 							} catch (Exception exp) {
-								logger.warn(
+								LOG.warn(
 										"A exception was thrown on invoking a request interceptor",
 										exp);
-								throw new RuntimeException(exp);
+								throw new HttpServiceInternalException(exp);
 							}
 						}
 					}
 				} catch (Exception exp) {
-					logger.warn(
+					LOG.warn(
 							"A exception was thrown on invoking a request interceptor",
 							exp);
-					throw new RuntimeException(exp);
+					throw new HttpServiceInternalException(exp);
 				}
 				try {
 					this.httpServiceServlet.service(req, res);
@@ -150,21 +150,23 @@ public class HttpServerManager implements ManagedServiceFactory {
 					thread.setContextClassLoader(current);
 				}
 				try {
-					for (HttpRequestInterceptor interceptor : this.requestInterceptors) {
-						try {
-							interceptor.afterRequest();
-						} catch (Exception exp) {
-							logger.warn(
-									"A exception was thrown on invoking a interceptor after request.",
-									exp);
-							throw new RuntimeException(exp);
+					if (this.requestInterceptors != null) {
+						for (HttpRequestInterceptor interceptor : this.requestInterceptors) {
+							try {
+								interceptor.afterRequest();
+							} catch (Exception exp) {
+								LOG.warn(
+										"A exception was thrown on invoking a interceptor after request.",
+										exp);
+								throw new HttpServiceInternalException(exp);
+							}
 						}
 					}
 				} catch (Exception exp) {
-					logger.warn(
+					LOG.warn(
 							"A exception was thrown on invoking a interceptor after request.",
 							exp);
-					throw new RuntimeException(exp);
+					throw new HttpServiceInternalException(exp);
 				}
 			} finally {
 				requestContext.reset();
@@ -178,19 +180,26 @@ public class HttpServerManager implements ManagedServiceFactory {
 
 	private static final String INTERNAL_CONTEXT_CLASSLOADER = "org.eclipse.equinox.http.jetty.internal.ContextClassLoader"; //$NON-NLS-1$
 
-	private static Logger logger = LoggerFactory
+	private static final Logger LOG = LoggerFactory
 			.getLogger(HttpServerManager.class);
 
 	// deleteDirectory is a convenience method to recursively delete a
 	// directory
 	private static boolean deleteDirectory(File directory) {
+		final String method = "deleteDirectory(): ";
 		if (directory.exists() && directory.isDirectory()) {
 			File[] files = directory.listFiles();
 			for (int i = 0; i < files.length; i++) {
 				if (files[i].isDirectory()) {
 					deleteDirectory(files[i]);
 				} else {
-					files[i].delete();
+					if (files[i].delete()) {
+						LOG.debug(method + "delete file {}.",
+								files[i].getAbsolutePath());
+					} else {
+						LOG.debug(method + "can't delete the file {}.",
+								files[i].getAbsolutePath());
+					}
 				}
 			}
 		}
@@ -268,6 +277,7 @@ public class HttpServerManager implements ManagedServiceFactory {
 	}
 
 	private Context createHttpContext(Dictionary dictionary) {
+		final String method = "createHttpContext(): ";
 		Context httpContext = new Context();
 		httpContext.setAttribute(INTERNAL_CONTEXT_CLASSLOADER, Thread
 				.currentThread().getContextClassLoader());
@@ -282,7 +292,18 @@ public class HttpServerManager implements ManagedServiceFactory {
 
 		File contextWorkDir = new File(this.workDir, DIR_PREFIX
 				+ dictionary.get(Constants.SERVICE_PID).hashCode());
-		contextWorkDir.mkdir();
+		if (contextWorkDir.mkdir()) {
+			LOG.debug(
+					method
+							+ "create a directory {} as working directory for the HTTP server.",
+					contextWorkDir.getAbsolutePath());
+		} else {
+			LOG.debug(
+					method
+							+ "directory {} already exists which will be used as working directory for the HTTP server.",
+					contextWorkDir.getAbsolutePath());
+		}
+
 		httpContext.setAttribute(CONTEXT_TEMPDIR, contextWorkDir);
 
 		HashSessionManager sessionManager = new HashSessionManager();
@@ -392,45 +413,13 @@ public class HttpServerManager implements ManagedServiceFactory {
 				server.stop();
 			} catch (Exception e) {
 				String message = "Exception while removing a factory instance.";
-				logger.error(method + message, e);
+				LOG.error(method + message, e);
 				e.printStackTrace();
 			}
 			File contextWorkDir = new File(this.workDir, DIR_PREFIX
 					+ pid.hashCode());
 			deleteDirectory(contextWorkDir);
 		}
-	}
-
-	private File getConfigurationFile(String serverName) {
-		final String method = "getConfigurationFile() : ";
-		String serverConfigurationDir = System
-				.getProperty("jetty.server.configuration.directory");
-		if (serverConfigurationDir == null) {
-			logger.error(method
-					+ "The system property jetty.server.configuration.directory is not set.");
-			throw new RuntimeException(
-					"The system property jetty.server.configuration.directory is not set.");
-		}
-		File serverConfigurationDirFolder = new File(serverConfigurationDir);
-		if (!serverConfigurationDirFolder.exists()) {
-			logger.error(
-					method
-							+ "The configuration directory {} for the jetty server {} does not exists!",
-					serverConfigurationDir, serverName);
-			throw new RuntimeException(
-					"The configuration directory for the jetty server does not exists!");
-		}
-		File jettyServerXmlConfiguration = new File(
-				serverConfigurationDirFolder, serverName + "-jetty.xml");
-		if (!jettyServerXmlConfiguration.exists()) {
-			logger.error(
-					method
-							+ "The jetty server XML configuration file {} does not exists!",
-					jettyServerXmlConfiguration.getAbsolutePath());
-			throw new RuntimeException(
-					"The jetty server configuration does not exists");
-		}
-		return jettyServerXmlConfiguration;
 	}
 
 	private Boolean getDefaultNIOEnablement() {
@@ -513,18 +502,19 @@ public class HttpServerManager implements ManagedServiceFactory {
 
 		if (dictionary.get("JETTY_XML_CONFIGURATION") != null) {
 			try {
-				File jettyConfiguration = getConfigurationFile(serverName);
+				File jettyConfiguration = JettyConfigurationUtils
+						.getConfigurationFile(serverName);
 				XmlConfiguration configuration = new XmlConfiguration(
 						new FileInputStream(jettyConfiguration));
 				configuration.configure(server);
 			} catch (FileNotFoundException exp) {
-				logger.error("Could not start the HTTP Server", exp);
+				LOG.error("Could not start the HTTP Server", exp);
 			} catch (SAXException exp) {
-				logger.error("Could not start the HTTP Server", exp);
+				LOG.error("Could not start the HTTP Server", exp);
 			} catch (IOException exp) {
-				logger.error("Could not start the HTTP Server", exp);
+				LOG.error("Could not start the HTTP Server", exp);
 			} catch (Exception exp) {
-				logger.error("Could not start the HTTP Server", exp);
+				LOG.error("Could not start the HTTP Server", exp);
 			}
 		} else {
 			Connector httpConnector = createHttpConnector(dictionary);

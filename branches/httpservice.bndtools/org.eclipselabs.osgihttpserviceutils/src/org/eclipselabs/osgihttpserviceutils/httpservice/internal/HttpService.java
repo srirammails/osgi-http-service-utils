@@ -68,7 +68,7 @@ public class HttpService implements HttpAdminService, RequestService {
 				try {
 					httpServerManager.shutdown();
 				} catch (Exception exp) {
-					throw new RuntimeException(exp);
+					throw new HttpServiceInternalException(exp);
 				}
 				setHttpServerManager(null);
 			}
@@ -78,9 +78,9 @@ public class HttpService implements HttpAdminService, RequestService {
 	
 	private static final String DEFAULT_PID = "default"; //$NON-NLS-1$
 
-	private static final String LOG_STDERR_THRESHOLD = "org.eclipse.equinox.http.jetty.log.stderr.threshold"; //$NON-NLS-1$
+	private static final Logger LOG = LoggerFactory.getLogger(HttpService.class);
 
-	private static final Logger logger = LoggerFactory.getLogger(HttpService.class);
+	private static final String LOG_STDERR_THRESHOLD = "org.eclipse.equinox.http.jetty.log.stderr.threshold"; //$NON-NLS-1$
 
 	private static final String PROP_ORG_OSGI_SERVICE_HTTP = "org.osgi.service.http.";
 
@@ -140,7 +140,8 @@ public class HttpService implements HttpAdminService, RequestService {
 		}
 
 		// HTTPS Enabled (default is false)
-		Boolean httpsEnabled = new Boolean(context.getProperty(PROPERTY_PREFIX
+		Boolean httpsEnabled = Boolean.valueOf(context
+				.getProperty(PROPERTY_PREFIX
 				+ JettyConstants.HTTPS_ENABLED));
 		defaultSettings.put(JettyConstants.HTTPS_ENABLED, httpsEnabled);
 
@@ -158,7 +159,7 @@ public class HttpService implements HttpAdminService, RequestService {
 			try {
 				defaultSettings.put(
 						JettyConstants.CONTEXT_SESSIONINACTIVEINTERVAL,
-						new Integer(sessionInactiveInterval));
+						Integer.valueOf(sessionInactiveInterval));
 			} catch (NumberFormatException e) {
 				// (log this) ignore
 			}
@@ -178,7 +179,7 @@ public class HttpService implements HttpAdminService, RequestService {
 	public HttpServer createHttpServer(String symbolicName) {
 		final String method = "createHttpServer(): ";
 		if(servers.containsKey(symbolicName)){
-			logger.warn(method
+			LOG.warn(method
 					+ "server with symbolic name {} is already running!",
 					symbolicName);
 			return servers.get(symbolicName);
@@ -212,27 +213,27 @@ public class HttpService implements HttpAdminService, RequestService {
 		if (port <= 0) {
 			String systemPropertyName = PROP_ORG_OSGI_SERVICE_HTTP + name
 					+ PROP_PORT;
-			logger.debug(method
+			LOG.debug(method
 					+ "Port is not set look up port system property : {}",
 					systemPropertyName);
 			String strPort = System.getProperty(systemPropertyName);
 			if (strPort != null) {
-				logger.debug(method
+				LOG.debug(method
 						+ "The port of the http server {} is set to {}", name,
 						strPort);
 				return Integer.valueOf(strPort);
 			}
-			logger.error(
+			LOG.error(
 					method
 							+ "No HTTP port is configured for the HTTP server {}, "
 							+ "please setup a port, direct see org.eclipselabs.osgihttpserviceutils.httpservice.HttpServer, "
 							+ "or set the system property {}, "
 							+ "or add a jetty XML configuration for the server !!!",
 					name, systemPropertyName);
-			throw new RuntimeException(
+			throw new HttpServiceInternalException(
 					"No HTTP Port is configured for the server " + name);
 		}
-		logger.debug(method + "The port of the http server {} is {}", name,
+		LOG.debug(method + "The port of the http server {} is {}", name,
 				port);
 		return port;
 	}
@@ -240,33 +241,6 @@ public class HttpService implements HttpAdminService, RequestService {
 	@Override
 	public RequestContext getRequestContext() {
 		return requestContext;
-	}
-
-	private boolean hasJettyXmlConfiguration(HttpServer server) {
-		final String method = "getConfigurationFile() : ";
-		String serverName = server.getSymbolicName();
-		String serverConfigurationDir = System
-				.getProperty("jetty.server.configuration.directory");
-		if (serverConfigurationDir == null)
-			return false;
-		File serverConfigurationDirFolder = new File(serverConfigurationDir);
-		if (!serverConfigurationDirFolder.exists()) {
-			logger.debug(
-					method
-							+ "The configuration directory {} for the jetty server {} does not exists!",
-					serverConfigurationDir, serverName);
-			return false;
-		}
-		File jettyServerXmlConfiguration = new File(
-				serverConfigurationDirFolder, serverName + "-jetty.xml");
-		if (!jettyServerXmlConfiguration.exists()) {
-			logger.debug(
-					method
-							+ "The jetty server XML configuration file {} does not exists!",
-					jettyServerXmlConfiguration.getAbsolutePath());
-			return false;
-		}
-		return true;
 	}
 
 	public void removeRequestInterceptors(HttpRequestInterceptor interceptor) {
@@ -289,7 +263,7 @@ public class HttpService implements HttpAdminService, RequestService {
 		HttpServerManager httpServerManager = new HttpServerManager(
 				requestInterceptors, jettyWorkDir, requestContext);
 		Dictionary<Object, Object> settings = createDefaultSettings(context);
-		if (hasJettyXmlConfiguration(httpServer)) {
+		if (JettyConfigurationUtils.existsJettyXmlConfiguration(httpServer)) {
 			settings.put("JETTY_XML_CONFIGURATION", true);
 		}
 		else{
@@ -299,7 +273,7 @@ public class HttpService implements HttpAdminService, RequestService {
 		try {
 			httpServerManager.updated(DEFAULT_PID, settings);
 		} catch (ConfigurationException exp) {
-			throw new RuntimeException(exp);
+			throw new HttpServiceInternalException(exp);
 		}
 		Dictionary<Object, Object> serviceProps = new Hashtable<Object, Object>();
 		ServiceRegistration httpServiceRegistration = context.registerService(
