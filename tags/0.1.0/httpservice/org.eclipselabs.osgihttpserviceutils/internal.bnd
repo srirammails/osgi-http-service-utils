@@ -1,2 +1,0 @@
-Private-Package: org.eclipselabs.osgihttpserviceutils.httpservice.internal
-Service-Component: org.eclipselabs.osgihttpserviceutils.httpservice.internal.*
