@@ -1,8 +1,11 @@
 package org.eclipselabs.osgihttpserviceutils.httpservice;
 
-public interface HttpAdminService
-{
-	
-  HttpServerInstance startServer(HttpServer httpServer);
+/**
+ * A service to administrate the HTTP servers in one OSGi platform.
+ *
+ */
+public interface HttpAdminService {
 
+	HttpServer createHttpServer(String symbolicName);
+	
 }

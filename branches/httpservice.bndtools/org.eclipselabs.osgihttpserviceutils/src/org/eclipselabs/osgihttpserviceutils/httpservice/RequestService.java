@@ -1,8 +1,7 @@
 package org.eclipselabs.osgihttpserviceutils.httpservice;
 
-public interface RequestService
-{
-  
-  RequestContext getRequestContext();
-  
+public interface RequestService {
+
+	RequestContext getRequestContext();
+
 }

@@ -1,30 +1,25 @@
 package org.eclipselabs.osgihttpserviceutils.httpservice;
 
-public class HttpServer {
+/**
+ * 
+ */
+public interface HttpServer {
 
-	private final String name;
+	int getPort();
 
-	private int port = 0;
+	String getSymbolicName();
 
-	public HttpServer(String name) {
-		this.name = name;
-	}
-
-	public HttpServer(String name, int port) {
-		this.name = name;
-		this.port = port;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setPort(int port) {
-		this.port = port;
-	}
+	HttpServer port(int httpPort);
 	
-	public int getPort(){
-		return this.port;
-	}
+	void setPort(int port);
+
+	/**
+	 * Start a HTTP server in the platform.
+	 * 
+	 * @param httpServer
+	 *            describes the HTTP server to be started.
+	 * @return the HTTP server instance which is running not null.
+	 */
+	HttpServerInstance start();
 
 }

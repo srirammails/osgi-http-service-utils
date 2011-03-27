@@ -15,9 +15,11 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipselabs.osgihttpserviceutils.httpservice.HttpAdminService;
 import org.eclipselabs.osgihttpserviceutils.httpservice.HttpRequestInterceptor;
@@ -25,14 +27,11 @@ import org.eclipselabs.osgihttpserviceutils.httpservice.HttpServer;
 import org.eclipselabs.osgihttpserviceutils.httpservice.HttpServerInstance;
 import org.eclipselabs.osgihttpserviceutils.httpservice.RequestContext;
 import org.eclipselabs.osgihttpserviceutils.httpservice.RequestService;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
-import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
-import org.osgi.service.startlevel.StartLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +41,7 @@ import aQute.bnd.annotation.component.Deactivate;
 import aQute.bnd.annotation.component.Reference;
 
 @Component(immediate = true)
-public class HttpService implements RequestService, HttpAdminService {
+public class HttpService implements HttpAdminService, RequestService {
 
 	static class DefaultHttpServerInstance implements HttpServerInstance {
 
@@ -77,31 +76,32 @@ public class HttpService implements RequestService, HttpAdminService {
 
 	}
 	
-	private static final Logger logger = LoggerFactory.getLogger(HttpService.class);
-
 	private static final String DEFAULT_PID = "default"; //$NON-NLS-1$
 
 	private static final String LOG_STDERR_THRESHOLD = "org.eclipse.equinox.http.jetty.log.stderr.threshold"; //$NON-NLS-1$
+
+	private static final Logger logger = LoggerFactory.getLogger(HttpService.class);
+
+	private static final String PROP_ORG_OSGI_SERVICE_HTTP = "org.osgi.service.http.";
+
+	private static final String PROP_PORT = ".port";
 
 	private BundleContext context;
 
 	private final List<DefaultHttpServerInstance> httpServerInstances = new ArrayList<DefaultHttpServerInstance>();
 
 	private File jettyWorkDir;
-
+	
 	private final DefaultRequestContext requestContext = new DefaultRequestContext();
 
 	private final List<HttpRequestInterceptor> requestInterceptors = new LinkedList<HttpRequestInterceptor>();
-	
-	private static final String PROP_PORT = ".port";
 
-	private static final String PROP_ORG_OSGI_SERVICE_HTTP = "org.osgi.service.http.";
+	private final Map<String, DefaultHttpServer> servers = new HashMap<String, DefaultHttpServer>();
 
 	public HttpService() {
 	}
 
 	@Activate
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void activate(BundleContext context) throws Exception {
 		setStdErrLogThreshold(context.getProperty(LOG_STDERR_THRESHOLD));
 		this.context = context;
@@ -112,10 +112,10 @@ public class HttpService implements RequestService, HttpAdminService {
 		requestInterceptors.add(interceptor);
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private Dictionary createDefaultSettings(BundleContext context) {
+	private Dictionary<Object, Object> createDefaultSettings(
+			BundleContext context) {
 		final String PROPERTY_PREFIX = "org.eclipse.equinox.http.jetty."; //$NON-NLS-1$
-		Dictionary defaultSettings = new Hashtable();
+		Dictionary<Object, Object> defaultSettings = new Hashtable<Object, Object>();
 
 		// PID
 		defaultSettings.put(Constants.SERVICE_PID, DEFAULT_PID);
@@ -174,6 +174,25 @@ public class HttpService implements RequestService, HttpAdminService {
 		return defaultSettings;
 	}
 
+	@Override
+	public HttpServer createHttpServer(String symbolicName) {
+		final String method = "createHttpServer(): ";
+		if(servers.containsKey(symbolicName)){
+			logger.warn(method
+					+ "server with symbolic name {} is already running!",
+					symbolicName);
+			return servers.get(symbolicName);
+		}
+		DefaultHttpServer httpServer = new DefaultHttpServer(symbolicName) {
+			@Override
+			public HttpServerInstance start() {
+				return startServer(this);
+			}
+		};
+		servers.put(symbolicName, httpServer);
+		return httpServer;
+	}
+
 	@Deactivate
 	public void deactivate(BundleContext context) throws Exception {
 		this.context = null;
@@ -186,65 +205,10 @@ public class HttpService implements RequestService, HttpAdminService {
 		}
 	}
 
-	@Override
-	public RequestContext getRequestContext() {
-		return requestContext;
-	}
-
-	public void removeRequestInterceptors(HttpRequestInterceptor interceptor) {
-		requestInterceptors.remove(interceptor);
-	}
-
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private void setStdErrLogThreshold(String property) {
-		try {
-			Class clazz = Class.forName("org.slf4j.Logger");
-			Method method = clazz.getMethod("setThresholdLogger",
-					new Class[] { String.class });
-			method.invoke(null, new Object[] { property });
-		} catch (Throwable t) {
-			// ignore
-		}
-	}
-
-	@Override
-	public HttpServerInstance startServer(HttpServer httpServer) {
-		HttpServerManager httpServerManager = new HttpServerManager(
-				requestInterceptors, jettyWorkDir, requestContext);
-		Dictionary settings = createDefaultSettings(context);
-		if (hasJettyXmlConfiguration(httpServer)) {
-			settings.put("JETTY_XML_CONFIGURATION", true);
-		}
-		else{
-			settings.put(JettyConstants.HTTP_PORT, getPort(httpServer));
-		}
-		settings.put("HTTP_SERVER_NAME", httpServer.getName());
-		try {
-			httpServerManager.updated(DEFAULT_PID, settings);
-		} catch (ConfigurationException exp) {
-			throw new RuntimeException(exp);
-		}
-		Dictionary serviceProps = new Hashtable();
-		ServiceRegistration httpServiceRegistration = context.registerService(
-				ManagedServiceFactory.class.getName(), httpServerManager,
-				serviceProps);
-		DefaultHttpServerInstance instance = new DefaultHttpServerInstance() {
-			@Override
-			public void shutdown() {
-				super.shutdown();
-				httpServerInstances.remove(this);
-			};
-		};
-		instance.setHttpServerManager(httpServerManager);
-		instance.setHttpServiceRegistration(httpServiceRegistration);
-		httpServerInstances.add(instance);
-		return instance;
-	}
-	
 	private int getPort(HttpServer server) {
 		final String method = "getPort(): ";
 		int port = server.getPort();
-		String name = server.getName();
+		String name = server.getSymbolicName();
 		if (port <= 0) {
 			String systemPropertyName = PROP_ORG_OSGI_SERVICE_HTTP + name
 					+ PROP_PORT;
@@ -272,23 +236,86 @@ public class HttpService implements RequestService, HttpAdminService {
 				port);
 		return port;
 	}
-	
+
+	@Override
+	public RequestContext getRequestContext() {
+		return requestContext;
+	}
+
 	private boolean hasJettyXmlConfiguration(HttpServer server) {
 		final String method = "getConfigurationFile() : ";
-		String serverName = server.getName();
-		String serverConfigurationDir = System.getProperty("jetty.server.configuration.directory");
-		if(serverConfigurationDir == null)
+		String serverName = server.getSymbolicName();
+		String serverConfigurationDir = System
+				.getProperty("jetty.server.configuration.directory");
+		if (serverConfigurationDir == null)
 			return false;
 		File serverConfigurationDirFolder = new File(serverConfigurationDir);
-		if(!serverConfigurationDirFolder.exists()){
-			logger.debug(method + "The configuration directory {} for the jetty server {} does not exists!", serverConfigurationDir, serverName);
+		if (!serverConfigurationDirFolder.exists()) {
+			logger.debug(
+					method
+							+ "The configuration directory {} for the jetty server {} does not exists!",
+					serverConfigurationDir, serverName);
 			return false;
 		}
-		File jettyServerXmlConfiguration = new File(serverConfigurationDirFolder, serverName + "-jetty.xml");
-		if(!jettyServerXmlConfiguration.exists()){
-			logger.debug(method + "The jetty server XML configuration file {} does not exists!", jettyServerXmlConfiguration.getAbsolutePath());
+		File jettyServerXmlConfiguration = new File(
+				serverConfigurationDirFolder, serverName + "-jetty.xml");
+		if (!jettyServerXmlConfiguration.exists()) {
+			logger.debug(
+					method
+							+ "The jetty server XML configuration file {} does not exists!",
+					jettyServerXmlConfiguration.getAbsolutePath());
 			return false;
 		}
 		return true;
+	}
+
+	public void removeRequestInterceptors(HttpRequestInterceptor interceptor) {
+		requestInterceptors.remove(interceptor);
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private void setStdErrLogThreshold(String property) {
+		try {
+			Class clazz = Class.forName("org.slf4j.Logger");
+			Method method = clazz.getMethod("setThresholdLogger",
+					new Class[] { String.class });
+			method.invoke(null, new Object[] { property });
+		} catch (Throwable t) {
+			// ignore
+		}
+	}
+
+	public HttpServerInstance startServer(final HttpServer httpServer) {
+		HttpServerManager httpServerManager = new HttpServerManager(
+				requestInterceptors, jettyWorkDir, requestContext);
+		Dictionary<Object, Object> settings = createDefaultSettings(context);
+		if (hasJettyXmlConfiguration(httpServer)) {
+			settings.put("JETTY_XML_CONFIGURATION", true);
+		}
+		else{
+			settings.put(JettyConstants.HTTP_PORT, getPort(httpServer));
+		}
+		settings.put("HTTP_SERVER_NAME", httpServer.getSymbolicName());
+		try {
+			httpServerManager.updated(DEFAULT_PID, settings);
+		} catch (ConfigurationException exp) {
+			throw new RuntimeException(exp);
+		}
+		Dictionary<Object, Object> serviceProps = new Hashtable<Object, Object>();
+		ServiceRegistration httpServiceRegistration = context.registerService(
+				ManagedServiceFactory.class.getName(), httpServerManager,
+				serviceProps);
+		DefaultHttpServerInstance instance = new DefaultHttpServerInstance() {
+			@Override
+			public void shutdown() {
+				super.shutdown();
+				servers.remove(httpServer.getSymbolicName());
+				httpServerInstances.remove(this);
+			};
+		};
+		instance.setHttpServerManager(httpServerManager);
+		instance.setHttpServiceRegistration(httpServiceRegistration);
+		httpServerInstances.add(instance);
+		return instance;
 	}
 }
