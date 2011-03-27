@@ -1,8 +1,14 @@
 package org.eclipselabs.osgihttpserviceutils.httpservice;
 
-public interface HttpServerInstance
-{
+/**
+ * The interface describes a running HTTP server via this interface a HTTP
+ * server can be shutdown.
+ */
+public interface HttpServerInstance {
 
-  void shutdown();
+	/**
+	 * Shutdown a running HTTP server.
+	 */
+	void shutdown();
 
 }

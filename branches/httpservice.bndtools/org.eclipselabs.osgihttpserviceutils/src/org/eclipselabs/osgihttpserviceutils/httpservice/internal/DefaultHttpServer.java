@@ -5,6 +5,7 @@ import org.eclipselabs.osgihttpserviceutils.httpservice.HttpServer;
 public abstract class DefaultHttpServer implements HttpServer {
 
 	private int httpPort = 0;
+
 	private final String symbolicName;
 
 	public DefaultHttpServer(String symbolicName) {
@@ -28,7 +29,7 @@ public abstract class DefaultHttpServer implements HttpServer {
 	}
 
 	@Override
-	public void setPort(int port){
+	public void setPort(int port) {
 		this.httpPort = port;
 	}
 

@@ -61,9 +61,8 @@ public class HttpServerManager implements ManagedServiceFactory {
 		 * @param requestInterceptors
 		 *            a list of {@link HttpRequestInterceptor}s
 		 */
-		public InternalHttpServiceServlet(
-				List<HttpRequestInterceptor> requestInterceptors,
-				DefaultRequestContext requestContext) {
+		public InternalHttpServiceServlet(DefaultRequestContext requestContext,
+				List<HttpRequestInterceptor> requestInterceptors) {
 			this.requestInterceptors = requestInterceptors;
 			this.requestContext = requestContext;
 		}
@@ -130,15 +129,12 @@ public class HttpServerManager implements ManagedServiceFactory {
 					if (requestInterceptors != null) {
 						for (HttpRequestInterceptor interceptor : requestInterceptors) {
 							try {
-								boolean isIntercepted = interceptor
-										.beforeRequest();
-								if (isIntercepted) {
-									return;
-								}
+								interceptor.beforeRequest();
 							} catch (Exception exp) {
 								logger.warn(
 										"A exception was thrown on invoking a request interceptor",
 										exp);
+								throw new RuntimeException(exp);
 							}
 						}
 					}
@@ -146,6 +142,7 @@ public class HttpServerManager implements ManagedServiceFactory {
 					logger.warn(
 							"A exception was thrown on invoking a request interceptor",
 							exp);
+					throw new RuntimeException(exp);
 				}
 				try {
 					this.httpServiceServlet.service(req, res);
@@ -155,20 +152,19 @@ public class HttpServerManager implements ManagedServiceFactory {
 				try {
 					for (HttpRequestInterceptor interceptor : this.requestInterceptors) {
 						try {
-							boolean isIntercepted = interceptor.afterRequest();
-							if (isIntercepted) {
-								return;
-							}
+							interceptor.afterRequest();
 						} catch (Exception exp) {
 							logger.warn(
 									"A exception was thrown on invoking a interceptor after request.",
 									exp);
+							throw new RuntimeException(exp);
 						}
 					}
 				} catch (Exception exp) {
 					logger.warn(
 							"A exception was thrown on invoking a interceptor after request.",
 							exp);
+					throw new RuntimeException(exp);
 				}
 			} finally {
 				requestContext.reset();
@@ -182,7 +178,8 @@ public class HttpServerManager implements ManagedServiceFactory {
 
 	private static final String INTERNAL_CONTEXT_CLASSLOADER = "org.eclipse.equinox.http.jetty.internal.ContextClassLoader"; //$NON-NLS-1$
 
-	private static Logger logger = LoggerFactory.getLogger(HttpServerManager.class);
+	private static Logger logger = LoggerFactory
+			.getLogger(HttpServerManager.class);
 
 	// deleteDirectory is a convenience method to recursively delete a
 	// directory
@@ -404,6 +401,38 @@ public class HttpServerManager implements ManagedServiceFactory {
 		}
 	}
 
+	private File getConfigurationFile(String serverName) {
+		final String method = "getConfigurationFile() : ";
+		String serverConfigurationDir = System
+				.getProperty("jetty.server.configuration.directory");
+		if (serverConfigurationDir == null) {
+			logger.error(method
+					+ "The system property jetty.server.configuration.directory is not set.");
+			throw new RuntimeException(
+					"The system property jetty.server.configuration.directory is not set.");
+		}
+		File serverConfigurationDirFolder = new File(serverConfigurationDir);
+		if (!serverConfigurationDirFolder.exists()) {
+			logger.error(
+					method
+							+ "The configuration directory {} for the jetty server {} does not exists!",
+					serverConfigurationDir, serverName);
+			throw new RuntimeException(
+					"The configuration directory for the jetty server does not exists!");
+		}
+		File jettyServerXmlConfiguration = new File(
+				serverConfigurationDirFolder, serverName + "-jetty.xml");
+		if (!jettyServerXmlConfiguration.exists()) {
+			logger.error(
+					method
+							+ "The jetty server XML configuration file {} does not exists!",
+					jettyServerXmlConfiguration.getAbsolutePath());
+			throw new RuntimeException(
+					"The jetty server configuration does not exists");
+		}
+		return jettyServerXmlConfiguration;
+	}
+
 	private Boolean getDefaultNIOEnablement() {
 		Properties systemProperties = System.getProperties();
 		String javaVendor = systemProperties.getProperty("java.vendor", ""); //$NON-NLS-1$ //$NON-NLS-2$
@@ -474,8 +503,8 @@ public class HttpServerManager implements ManagedServiceFactory {
 		Server server = new Server();
 
 		ServletHolder holder = new ServletHolder(
-				new InternalHttpServiceServlet(requestInterceptors,
-						requestContext));
+				new InternalHttpServiceServlet(requestContext,
+						requestInterceptors));
 		holder.setInitOrder(0);
 		holder.setInitParameter(Constants.SERVICE_VENDOR, "Eclipse.org"); //$NON-NLS-1$
 		holder.setInitParameter(Constants.SERVICE_DESCRIPTION,
@@ -540,25 +569,5 @@ public class HttpServerManager implements ManagedServiceFactory {
 			throw new ConfigurationException(pid, e.getMessage(), e);
 		}
 		this.servers.put(pid, server);
-	}
-	
-	private File getConfigurationFile(String serverName) {
-		final String method = "getConfigurationFile() : ";
-		String serverConfigurationDir = System.getProperty("jetty.server.configuration.directory");
-		if(serverConfigurationDir == null){
-			logger.error(method + "The system property jetty.server.configuration.directory is not set.");
-			throw new RuntimeException("The system property jetty.server.configuration.directory is not set.");
-		}
-		File serverConfigurationDirFolder = new File(serverConfigurationDir);
-		if(!serverConfigurationDirFolder.exists()){
-			logger.error(method + "The configuration directory {} for the jetty server {} does not exists!", serverConfigurationDir, serverName);
-			throw new RuntimeException("The configuration directory for the jetty server does not exists!");
-		}
-		File jettyServerXmlConfiguration = new File(serverConfigurationDirFolder, serverName + "-jetty.xml");
-		if(!jettyServerXmlConfiguration.exists()){
-			logger.error(method + "The jetty server XML configuration file {} does not exists!", jettyServerXmlConfiguration.getAbsolutePath());
-			throw new RuntimeException("The jetty server configuration does not exists");
-		}
-		return jettyServerXmlConfiguration;
 	}
 }
