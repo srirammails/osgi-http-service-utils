@@ -13,7 +13,6 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.eclipselabs.osgihttpserviceutils.httpservice.HttpAdminService;
 import org.eclipselabs.osgihttpserviceutils.httpservice.HttpRequestInterceptor;
-import org.eclipselabs.osgihttpserviceutils.httpservice.HttpServer;
 import org.eclipselabs.osgihttpserviceutils.httpservice.HttpServerInstance;
 import org.eclipselabs.osgihttpserviceutils.httpservice.RequestService;
 import org.osgi.framework.BundleContext;
@@ -23,84 +22,79 @@ import org.osgi.util.tracker.ServiceTracker;
 
 import bndtools.runtime.junit.OSGiTestCase;
 
-public class HttpRequestInterceptorTest extends OSGiTestCase
-{
+public class HttpRequestInterceptorTest extends OSGiTestCase {
 
-  ServiceTracker httpAdminServiceTracker;
+	ServiceTracker httpAdminServiceTracker;
 
-  private HttpServerInstance httpServerInstance;
+	private HttpServerInstance httpServerInstance;
 
-  private ServiceTracker httpServiceTracker;
+	private ServiceTracker httpServiceTracker;
 
-  ServiceTracker requestServiceTracker;
+	ServiceTracker requestServiceTracker;
 
-  @Override
-  protected void setUp() throws Exception
-  {
-    BundleContext bundleContext = getBundleContext();
+	@Override
+	protected void setUp() throws Exception {
+		BundleContext bundleContext = getBundleContext();
 
-    HttpServer server = new HttpServer("internal", 9090);
-    httpAdminServiceTracker = new ServiceTracker(bundleContext,
-        HttpAdminService.class.getName(), null);
-    httpAdminServiceTracker.waitForService(3000);
-    httpAdminServiceTracker.open();
-    HttpAdminService httpAdminService = (HttpAdminService) httpAdminServiceTracker
-        .getService();
-    assertNotNull(httpAdminService);
-    httpServerInstance = httpAdminService.startServer(server);
+		httpAdminServiceTracker = new ServiceTracker(bundleContext,
+				HttpAdminService.class.getName(), null);
+		httpAdminServiceTracker.waitForService(3000);
+		httpAdminServiceTracker.open();
+		HttpAdminService httpAdminService = (HttpAdminService) httpAdminServiceTracker
+				.getService();
+		assertNotNull(httpAdminService);
+		httpServerInstance = httpAdminService.createHttpServer("internal")
+				.port(9090).start();
 
-    Interceptor interceptor = new Interceptor();
-    bundleContext.registerService(HttpRequestInterceptor.class.getName(),
-        interceptor, null);
+		Interceptor interceptor = new Interceptor();
+		bundleContext.registerService(HttpRequestInterceptor.class.getName(),
+				interceptor, null);
 
-    requestServiceTracker = new ServiceTracker(bundleContext,
-        RequestService.class.getName(), null);
-    requestServiceTracker.waitForService(3000);
-    requestServiceTracker.open();
-    RequestService requestService = (RequestService) requestServiceTracker
-        .getService();
-    assertNotNull(requestService);
-    interceptor.setRequestService(requestService);
+		requestServiceTracker = new ServiceTracker(bundleContext,
+				RequestService.class.getName(), null);
+		requestServiceTracker.waitForService(3000);
+		requestServiceTracker.open();
+		RequestService requestService = (RequestService) requestServiceTracker
+				.getService();
+		assertNotNull(requestService);
+		interceptor.setRequestService(requestService);
 
-    httpServiceTracker = new ServiceTracker(bundleContext,
-        HttpService.class.getName(), null);
-    httpServiceTracker.waitForService(3000);
-    httpServiceTracker.open();
-    HttpService httpService = (HttpService) httpServiceTracker.getService();
-    assertNotNull(httpService);
+		httpServiceTracker = new ServiceTracker(bundleContext,
+				HttpService.class.getName(), null);
+		httpServiceTracker.waitForService(3000);
+		httpServiceTracker.open();
+		HttpService httpService = (HttpService) httpServiceTracker.getService();
+		assertNotNull(httpService);
 
-    HttpServlet servlet = new HttpServlet()
-    {
-      @Override
-      protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-          throws ServletException, IOException
-      {
-      }
-    };
-    HttpContext httpContext = httpService.createDefaultHttpContext();
-    Dictionary initparams = new Properties();
-    httpService.registerServlet("/hello", servlet, initparams, httpContext);
+		HttpServlet servlet = new HttpServlet() {
+			@Override
+			protected void doGet(HttpServletRequest req,
+					HttpServletResponse resp) throws ServletException,
+					IOException {
+			}
+		};
+		HttpContext httpContext = httpService.createDefaultHttpContext();
+		Dictionary initparams = new Properties();
+		httpService.registerServlet("/hello", servlet, initparams, httpContext);
 
-    super.setUp();
-  }
+		super.setUp();
+	}
 
-  @Override
-  protected void tearDown() throws Exception
-  {
-    httpServerInstance.shutdown();
-    httpAdminServiceTracker.close();
-    httpServiceTracker.close();
-    requestServiceTracker.close();
-    super.tearDown();
-  }
+	@Override
+	protected void tearDown() throws Exception {
+		httpServerInstance.shutdown();
+		httpAdminServiceTracker.close();
+		httpServiceTracker.close();
+		requestServiceTracker.close();
+		super.tearDown();
+	}
 
-  public void testHttpRequestInterceptor() throws Exception
-  {
-    HttpClient httpClient = new HttpClient();
-    GetMethod request = new GetMethod("http://localhost:9090/hello");
-    assertEquals(200, httpClient.executeMethod(request));
-    String response = request.getResponseBodyAsString();
-    assertTrue(response.trim().startsWith("Before"));
-    assertTrue(response.trim().endsWith("After"));
-  }
+	public void testHttpRequestInterceptor() throws Exception {
+		HttpClient httpClient = new HttpClient();
+		GetMethod request = new GetMethod("http://localhost:9090/hello");
+		assertEquals(200, httpClient.executeMethod(request));
+		String response = request.getResponseBodyAsString();
+		assertTrue(response.trim().startsWith("Before"));
+		assertTrue(response.trim().endsWith("After"));
+	}
 }
