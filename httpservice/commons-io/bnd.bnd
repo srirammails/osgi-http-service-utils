@@ -1,0 +1,6 @@
+-buildpath: lib/commons-io-1.3.2.jar;version=file
+Export-Package: org.apache.commons.io;version=${Bundle-Version},\
+	org.apache.commons.io.filefilter;version=${Bundle-Version},\
+	org.apache.commons.io.input;version=${Bundle-Version},\
+	org.apache.commons.io.output;version=${Bundle-Version}
+Bundle-Version: 1.3.2
