@@ -1,0 +1,2 @@
+Private-Package: org.eclipselabs.osgihttpserviceutils.example
+Bundle-Activator: org.eclipselabs.osgihttpserviceutils.example.Activator

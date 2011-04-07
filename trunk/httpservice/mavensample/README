@@ -1,0 +1,4 @@
+#
+# Run Sample
+
+mvn clean install pax:run
