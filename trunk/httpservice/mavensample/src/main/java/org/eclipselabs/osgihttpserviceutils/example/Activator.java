@@ -1,14 +1,12 @@
 package org.eclipselabs.osgihttpserviceutils.example;
 
 import java.util.Properties;
-
 import org.eclipselabs.osgihttpserviceutils.httpservice.HttpAdminService;
 import org.eclipselabs.osgihttpserviceutils.httpservice.HttpServerInstance;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.Filter;
-import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.service.http.HttpService;
 import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
@@ -50,14 +48,18 @@ public class Activator implements BundleActivator {
 		logger.info("Get default HTTP Service.");
 		defaultHttpService = getDefaultHttpService(context);
 		
-		logger.info("Default HTTP service register demo servlet, invoke demo servlet under http://localhost:8080/.");
-		defaultHttpService.registerServlet("/", new EchoServlet("Hello Default HTTP Service"), new Properties(), null);
+		logger.info("Default HTTP service register demo servlet, " 
+				+ "invoke demo servlet under http://localhost:8080/.");
+		defaultHttpService.registerServlet("/", 
+				new EchoServlet("Hello Default HTTP Service"), new Properties(), null);
 		
 		logger.info("Get internal HTTP Service.");
 		internalHttpService = getInternalHttpService(context);
 		
-		logger.info("Internal HTTP service register demo servlet, invoke demo servlet under http://localhost:9090/.");
-		internalHttpService.registerServlet("/", new EchoServlet("Hello Internal HTTP Service"), new Properties(), null);
+		logger.info("Internal HTTP service register demo servlet, " 
+				+ "invoke demo servlet under http://localhost:9090/.");
+		internalHttpService.registerServlet("/", 
+				new EchoServlet("Hello Internal HTTP Service"), new Properties(), null);
 	}
 	
 	@Override
@@ -79,7 +81,7 @@ public class Activator implements BundleActivator {
 		internalHttpServiceTracker.close();
 	}
 
-	 HttpService getInternalHttpService(BundleContext context) throws InvalidSyntaxException, InterruptedException {
+	 HttpService getInternalHttpService(BundleContext context) throws Exception {
 		String filterString = "(&(" + Constants.OBJECTCLASS + "="
 				+ HttpService.class.getName() + ")(http.default.service=false))";
 		logger.info("HTTP Service Filter: " + filterString);
@@ -90,7 +92,7 @@ public class Activator implements BundleActivator {
 		return (HttpService) internalHttpServiceTracker.getService();
 	}
 
-	HttpService getDefaultHttpService(BundleContext context) throws InvalidSyntaxException, InterruptedException {
+	HttpService getDefaultHttpService(BundleContext context) throws Exception {
 		String filterString = "(&(" + Constants.OBJECTCLASS + "="
 				+ HttpService.class.getName() + ")(http.default.service=true))";
 		logger.info("HTTP Service Filter: " + filterString);
@@ -101,7 +103,7 @@ public class Activator implements BundleActivator {
 		return (HttpService) defaultHttpServiceTracker.getService();
 	}
 
-	HttpAdminService getHttpAdminService(BundleContext context) throws InterruptedException {
+	HttpAdminService getHttpAdminService(BundleContext context) throws Exception {
 		httpAdminServiceTracker = new ServiceTracker(context,
 				HttpAdminService.class.getName(), null);
 		httpAdminServiceTracker.waitForService(3000);
