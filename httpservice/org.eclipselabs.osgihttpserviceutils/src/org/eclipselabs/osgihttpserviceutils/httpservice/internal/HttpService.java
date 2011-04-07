@@ -263,6 +263,7 @@ public class HttpService implements HttpAdminService, RequestService {
 		HttpServerManager httpServerManager = new HttpServerManager(
 				requestInterceptors, jettyWorkDir, requestContext);
 		Dictionary<Object, Object> settings = createDefaultSettings(context);
+		settings.put("HTTP_SERVER_CUSTOM_SERVICE_PROPS", httpServer.getServiceProperties());
 		if (JettyConfigurationUtils.existsJettyXmlConfiguration(httpServer)) {
 			settings.put("JETTY_XML_CONFIGURATION", true);
 		}
@@ -275,6 +276,7 @@ public class HttpService implements HttpAdminService, RequestService {
 		} catch (ConfigurationException exp) {
 			throw new HttpServiceInternalException(exp);
 		}
+		
 		Dictionary<Object, Object> serviceProps = new Hashtable<Object, Object>();
 		ServiceRegistration httpServiceRegistration = context.registerService(
 				ManagedServiceFactory.class.getName(), httpServerManager,

@@ -499,7 +499,14 @@ public class HttpServerManager implements ManagedServiceFactory {
 		holder.setInitParameter(Constants.SERVICE_DESCRIPTION,
 				"Equinox Jetty-based Http Service"); //$NON-NLS-1$
 		holder.setInitParameter("http.service.name", serverName);
-
+		
+		Map props = (Map) dictionary.get("HTTP_SERVER_CUSTOM_SERVICE_PROPS");
+		for (Object key : props.keySet()){
+		  if(props.get(key) != null){
+		    holder.setInitParameter(key.toString(), props.get(key).toString());
+		  }
+    }
+		
 		if (dictionary.get("JETTY_XML_CONFIGURATION") != null) {
 			try {
 				File jettyConfiguration = JettyConfigurationUtils
