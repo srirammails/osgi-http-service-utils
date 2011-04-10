@@ -10,5 +10,10 @@ public interface HttpServerInstance {
 	 * Shutdown a running HTTP server.
 	 */
 	void shutdown();
+	
+	/**
+	 * Trigger a configuration reload of the running HTTP server instance.
+	 */
+	void reloadConfiguration();
 
 }

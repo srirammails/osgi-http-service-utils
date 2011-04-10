@@ -74,9 +74,14 @@ public class HttpService implements HttpAdminService, RequestService {
 			}
 		}
 
+		@Override
+		public void reloadConfiguration() {
+			throw new UnsupportedOperationException();
+		}
+
 	}
 	
-	private static final String DEFAULT_PID = "default"; //$NON-NLS-1$
+	static final String DEFAULT_PID = "default"; //$NON-NLS-1$
 
 	private static final Logger LOG = LoggerFactory.getLogger(HttpService.class);
 
@@ -112,7 +117,7 @@ public class HttpService implements HttpAdminService, RequestService {
 		requestInterceptors.add(interceptor);
 	}
 
-	private Dictionary<Object, Object> createDefaultSettings(
+	protected Dictionary<Object, Object> createDefaultSettings(
 			BundleContext context) {
 		final String PROPERTY_PREFIX = "org.eclipse.equinox.http.jetty."; //$NON-NLS-1$
 		Dictionary<Object, Object> defaultSettings = new Hashtable<Object, Object>();
@@ -198,7 +203,7 @@ public class HttpService implements HttpAdminService, RequestService {
 	public void deactivate(BundleContext context) throws Exception {
 		this.context = null;
 		ArrayList<HttpServerInstance> shutdownServers = new ArrayList<HttpServerInstance>();
-		for (HttpServerInstance instance : httpServerInstances) {
+		for (HttpServerInstance instance : getHttpServerInstances()) {
 			shutdownServers.add(instance);
 		}
 		for (HttpServerInstance httpServerInstance : shutdownServers) {
@@ -259,13 +264,12 @@ public class HttpService implements HttpAdminService, RequestService {
 		}
 	}
 
-	public HttpServerInstance startServer(final HttpServer httpServer) {
-		HttpServerManager httpServerManager = new HttpServerManager(
-				requestInterceptors, jettyWorkDir, requestContext);
+	public DefaultHttpServerInstance startServer(final HttpServer httpServer) {
+		HttpServerManager httpServerManager = createHttpServerManager();
 		Dictionary<Object, Object> settings = createDefaultSettings(context);
 		settings.put("HTTP_SERVER_CUSTOM_SERVICE_PROPS", httpServer.getServiceProperties());
 		if (JettyConfigurationUtils.existsJettyXmlConfiguration(httpServer)) {
-			settings.put("JETTY_XML_CONFIGURATION", true);
+			settings.put(JettyConstants.JETTY_XML_CONFIGURATION, true);
 		}
 		else{
 			settings.put(JettyConstants.HTTP_PORT, getPort(httpServer));
@@ -286,12 +290,21 @@ public class HttpService implements HttpAdminService, RequestService {
 			public void shutdown() {
 				super.shutdown();
 				servers.remove(httpServer.getSymbolicName());
-				httpServerInstances.remove(this);
+				getHttpServerInstances().remove(this);
 			};
 		};
 		instance.setHttpServerManager(httpServerManager);
 		instance.setHttpServiceRegistration(httpServiceRegistration);
-		httpServerInstances.add(instance);
+		getHttpServerInstances().add(instance);
 		return instance;
 	}
+
+	protected HttpServerManager createHttpServerManager() {
+		return new HttpServerManager(requestInterceptors, jettyWorkDir, requestContext);
+	}
+
+	public List<DefaultHttpServerInstance> getHttpServerInstances() {
+		return httpServerInstances;
+	}
+
 }

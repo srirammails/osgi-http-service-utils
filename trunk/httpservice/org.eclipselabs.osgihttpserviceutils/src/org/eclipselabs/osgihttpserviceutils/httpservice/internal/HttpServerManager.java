@@ -232,6 +232,8 @@ public class HttpServerManager implements ManagedServiceFactory {
 		this.requestContext = requestContext;
 	}
 
+	
+
 	@SuppressWarnings("rawtypes")
 	private Connector createHttpConnector(Dictionary dictionary) {
 		Boolean httpEnabled = (Boolean) dictionary
@@ -477,10 +479,6 @@ public class HttpServerManager implements ManagedServiceFactory {
 	 * JettyCustomizer therefore see {@link JettyCustomizer}. And the other mode
 	 * is via XML configuration, there the follow system properties must be set:
 	 * 
-	 * -Djetty.xml.configuration=true
-	 * -Djetty.xml.configuration.external="D:\\tmp\\jetty.xml"
-	 * -Djetty.xml.configuration.internal="D:\\tmp\\jetty-internal.xml"
-	 * 
 	 * {@inheritDoc}
 	 */
 	@Override
@@ -505,7 +503,7 @@ public class HttpServerManager implements ManagedServiceFactory {
 		  if(props.get(key) != null){
 		    holder.setInitParameter(key.toString(), props.get(key).toString());
 		  }
-    }
+		}
 		
 		if (dictionary.get("JETTY_XML_CONFIGURATION") != null) {
 			try {

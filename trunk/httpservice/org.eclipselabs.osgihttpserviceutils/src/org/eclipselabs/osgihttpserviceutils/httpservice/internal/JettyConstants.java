@@ -127,4 +127,6 @@ public interface JettyConstants
    */
   public static final String OTHER_INFO = "other.info"; //$NON-NLS-1$
 
+public static final String JETTY_XML_CONFIGURATION = "JETTY_XML_CONFIGURATION";
+
 }
