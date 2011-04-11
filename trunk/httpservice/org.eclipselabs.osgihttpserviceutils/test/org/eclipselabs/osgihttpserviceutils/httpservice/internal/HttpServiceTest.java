@@ -8,10 +8,10 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.Dictionary;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 
 import org.apache.commons.io.IOUtils;
+import org.eclipselabs.osgihttpserviceutils.httpservice.HttpRequestInterceptor;
 import org.eclipselabs.osgihttpserviceutils.httpservice.HttpServer;
 import org.jmock.Expectations;
 import org.jmock.auto.Mock;
@@ -29,8 +29,6 @@ import org.osgi.service.cm.ManagedServiceFactory;
 
 public class HttpServiceTest {
 	
-	private static final String PREFIX_HTTP_JETTY_PROPERTIES = "org.eclipse.equinox.http.jetty.";
-
 	static final String JETTY_SERVER_CONFIGURATION_DIRECTORY = "jetty.server.configuration.directory";
 	
 	static final String TMP_DIR = System.getProperty("java.io.tmpdir");
@@ -40,24 +38,26 @@ public class HttpServiceTest {
 		setImposteriser(ClassImposteriser.INSTANCE);
 	}};
 	
-	HttpServer httpServer;
-	
 	@Mock BundleContext bundleContext;
 	
 	@Mock ServiceRegistration serviceRegistration;
 	
 	@Mock HttpServerManager httpServerManager;
+		
+	Dictionary<Object,Object> settings;
 	
-	int httpPort = 8080;
-	
-	Map<Object, Object> serviceProperties;
-	
-	Dictionary settings;
+	HttpServer httpServer;
 	
 	HttpService httpService;
 
 	@Before public void setUp() throws Exception {
-		serviceProperties = new HashMap<Object, Object>();
+		httpService = createHttService();
+		
+		httpServer = httpService
+			.createHttpServer("defaultHttpServer")
+			.serviceProperties(new HashMap<Object, Object>())
+			.port(8080);
+		
 		settings = new Properties();
 		settings.put(Constants.SERVICE_PID, "default");
 		settings.put(JettyConstants.HTTP_ENABLED, true);
@@ -66,8 +66,8 @@ public class HttpServiceTest {
 		settings.put(JettyConstants.CONTEXT_PATH, "/");
 		settings.put(JettyConstants.CONTEXT_SESSIONINACTIVEINTERVAL, 6000);
 		settings.put(JettyConstants.OTHER_INFO, "Other Jetty Infos");
-		settings.put("HTTP_SERVER_CUSTOM_SERVICE_PROPS", serviceProperties);
-		httpService = createHttService();
+		settings.put("HTTP_SERVER_CUSTOM_SERVICE_PROPS", httpServer.getServiceProperties());
+		
 		mockery.checking(new Expectations(){{
 			oneOf(bundleContext).getProperty("org.eclipse.equinox.http.jetty.log.stderr.threshold");
 			will(returnValue(null));
@@ -81,48 +81,90 @@ public class HttpServiceTest {
 	
 	@Test public void startServer_withConfiguredPort() throws Exception {
 		mockBundleContextProperties();
-		httpServer = httpService.createHttpServer("defaultHttpServer").serviceProperties(serviceProperties).port(httpPort);
-		settings.put(JettyConstants.HTTP_PORT, httpPort);
-		settings.put("HTTP_SERVER_NAME", "defaultHttpServer");
+		settings.put(JettyConstants.HTTP_PORT, httpServer.getPort());
+		settings.put(JettyConstants.HTTP_SERVER_NAME, httpServer.getSymbolicName());
 		mockHttpServerManagerUpdate();
 		mockBundleContextRegisterService();
-		assertThat(httpService.startServer(httpServer), isIn(httpService.getHttpServerInstances()));
+		assertThat(httpServer.start(), isIn(httpService.getHttpServerInstances()));
 	}
 	
 	@Test public void startServer_WithNoConfiguredPort() throws Exception {
 		mockBundleContextProperties();
-		httpServer = httpService.createHttpServer("defaultHttpServer").serviceProperties(serviceProperties).port(0);
 		setupJettyConfigurationArea();
 		settings.put(JettyConstants.JETTY_XML_CONFIGURATION, true);
-		settings.put("HTTP_SERVER_NAME", "defaultHttpServer");
+		settings.put(JettyConstants.HTTP_SERVER_NAME, httpServer.getSymbolicName());
 		mockHttpServerManagerUpdate();
 		mockBundleContextRegisterService();
-		assertThat(httpService.startServer(httpServer), isIn(httpService.getHttpServerInstances()));
+		assertThat(httpServer.port(0).start(), isIn(httpService.getHttpServerInstances()));
 	}
 	
 	@Test(expected = HttpServiceInternalException.class)
 	public void startServer_HttpServiceInternalException() throws Exception {
 		mockBundleContextProperties();
-		httpServer = httpService.createHttpServer("defaultHttpServer").serviceProperties(serviceProperties).port(8080);
 		mockery.checking(new Expectations(){{
 			oneOf(httpServerManager).updated(with(HttpService.DEFAULT_PID), with(any(Dictionary.class)));
 			will(throwException(new ConfigurationException("","")));
 		}});
-		httpService.startServer(httpServer);
+		httpServer.start();
 	}
 	
 	@Test public void shutdown() throws Exception {
 		mockBundleContextProperties();
-		httpServer = httpService.createHttpServer("defaultHttpServer").serviceProperties(serviceProperties).port(8080);
-		settings.put(JettyConstants.HTTP_PORT, httpPort);
-		settings.put("HTTP_SERVER_NAME", "defaultHttpServer");
+		settings.put(JettyConstants.HTTP_PORT, httpServer.getPort());
+		settings.put(JettyConstants.HTTP_SERVER_NAME, httpServer.getSymbolicName());
 		mockHttpServerManagerUpdate();
 		mockBundleContextRegisterService();
 		mockery.checking(new Expectations(){{
 			oneOf(serviceRegistration).unregister();
 			oneOf(httpServerManager).shutdown();
 		}});
+		httpServer.start().shutdown();
+		assertThat(httpService.getHttpServerInstances(), hasSize(0));
+	}
+	
+	@Test(expected = HttpServiceInternalException.class)
+	public void shutdown_InternalError() throws Exception {
+		mockBundleContextProperties();
+		settings.put(JettyConstants.HTTP_PORT, httpServer.getPort());
+		settings.put(JettyConstants.HTTP_SERVER_NAME, httpServer.getSymbolicName());
+		mockHttpServerManagerUpdate();
+		mockBundleContextRegisterService();
+		mockery.checking(new Expectations(){{
+			oneOf(serviceRegistration).unregister();
+			oneOf(httpServerManager).shutdown();
+			will(throwException(new Exception()));
+		}});
 		httpService.startServer(httpServer).shutdown();
+	}
+	
+	@Test(expected = UnsupportedOperationException.class) 
+	public void reloadConfiguration() throws Exception {
+		mockBundleContextProperties();
+		settings.put(JettyConstants.HTTP_PORT, httpServer.getPort());
+		settings.put(JettyConstants.HTTP_SERVER_NAME, httpServer.getSymbolicName());
+		mockHttpServerManagerUpdate();
+		mockBundleContextRegisterService();
+		httpService.startServer(httpServer).reloadConfiguration();
+	}
+	
+	@Test public void addRequestInterceptors() throws Exception {
+		HttpRequestInterceptor requestInterceptor = mockery.mock(HttpRequestInterceptor.class);
+		httpService.addRequestInterceptors(requestInterceptor);
+		assertThat(httpService.getRequestInterceptors(), contains(requestInterceptor));
+	}
+	
+	@Test public void deactivate() throws Exception {
+		mockBundleContextProperties();
+		settings.put(JettyConstants.HTTP_PORT, httpServer.getPort());
+		settings.put(JettyConstants.HTTP_SERVER_NAME, httpServer.getSymbolicName());
+		mockHttpServerManagerUpdate();
+		mockBundleContextRegisterService();
+		mockery.checking(new Expectations(){{
+			oneOf(serviceRegistration).unregister();
+			oneOf(httpServerManager).shutdown();
+		}});
+		httpServer.start();
+		httpService.deactivate(bundleContext);
 		assertThat(httpService.getHttpServerInstances(), hasSize(0));
 	}
 	
@@ -147,22 +189,22 @@ public class HttpServiceTest {
 	
 	void mockBundleContextProperties() {
 		mockery.checking(new Expectations(){{
-			oneOf(bundleContext).getProperty(PREFIX_HTTP_JETTY_PROPERTIES + JettyConstants.HTTP_ENABLED);
+			oneOf(bundleContext).getProperty(HttpService.PROPERTY_PREFIX + JettyConstants.HTTP_ENABLED);
 			will(returnValue("true"));
 			
-			oneOf(bundleContext).getProperty(PREFIX_HTTP_JETTY_PROPERTIES + JettyConstants.HTTP_HOST);
+			oneOf(bundleContext).getProperty(HttpService.PROPERTY_PREFIX + JettyConstants.HTTP_HOST);
 			will(returnValue("0.0.0.0"));
 			
-			oneOf(bundleContext).getProperty(PREFIX_HTTP_JETTY_PROPERTIES + JettyConstants.HTTPS_ENABLED);
+			oneOf(bundleContext).getProperty(HttpService.PROPERTY_PREFIX + JettyConstants.HTTPS_ENABLED);
 			will(returnValue("false"));
 			
-			oneOf(bundleContext).getProperty(PREFIX_HTTP_JETTY_PROPERTIES + JettyConstants.CONTEXT_PATH);
+			oneOf(bundleContext).getProperty(HttpService.PROPERTY_PREFIX + JettyConstants.CONTEXT_PATH);
 			will(returnValue("/"));
 			
-			oneOf(bundleContext).getProperty(PREFIX_HTTP_JETTY_PROPERTIES + JettyConstants.CONTEXT_SESSIONINACTIVEINTERVAL);
+			oneOf(bundleContext).getProperty(HttpService.PROPERTY_PREFIX + JettyConstants.CONTEXT_SESSIONINACTIVEINTERVAL);
 			will(returnValue("6000"));
 			
-			oneOf(bundleContext).getProperty(PREFIX_HTTP_JETTY_PROPERTIES + JettyConstants.OTHER_INFO);
+			oneOf(bundleContext).getProperty(HttpService.PROPERTY_PREFIX + JettyConstants.OTHER_INFO);
 			will(returnValue("Other Jetty Infos"));
 		}});
 	}

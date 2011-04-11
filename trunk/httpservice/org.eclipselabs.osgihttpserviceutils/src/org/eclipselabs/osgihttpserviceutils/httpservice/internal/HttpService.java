@@ -1,14 +1,3 @@
-/*******************************************************************************
- * Copyright (c) 2005, 2009 Cognos Incorporated, IBM Corporation and
- * others. All rights reserved. This program and the accompanying
- * materials are made available under the terms of the Eclipse Public
- * License v1.0 which accompanies this distribution, and is available
- * at http://www.eclipse.org/legal/epl-v10.html
- * 
- * Contributors: Cognos Incorporated - initial API and implementation
- * IBM Corporation - bug fixes and enhancements
- *******************************************************************************/
-
 package org.eclipselabs.osgihttpserviceutils.httpservice.internal;
 
 import java.io.File;
@@ -81,6 +70,8 @@ public class HttpService implements HttpAdminService, RequestService {
 
 	}
 	
+	final static String PROPERTY_PREFIX = "org.eclipselabs.osgihttpserviceutils.httpservice."; //$NON-NLS-1$
+	
 	static final String DEFAULT_PID = "default"; //$NON-NLS-1$
 
 	private static final Logger LOG = LoggerFactory.getLogger(HttpService.class);
@@ -93,7 +84,7 @@ public class HttpService implements HttpAdminService, RequestService {
 
 	private BundleContext context;
 
-	private final List<DefaultHttpServerInstance> httpServerInstances = new ArrayList<DefaultHttpServerInstance>();
+	private final List<HttpServerInstance> httpServerInstances = new ArrayList<HttpServerInstance>();
 
 	private File jettyWorkDir;
 	
@@ -114,12 +105,11 @@ public class HttpService implements HttpAdminService, RequestService {
 
 	@Reference(unbind = "removeRequestInterceptors", multiple = true, optional = true, dynamic = true)
 	public void addRequestInterceptors(HttpRequestInterceptor interceptor) {
-		requestInterceptors.add(interceptor);
+		 requestInterceptors.add(interceptor);
 	}
 
 	protected Dictionary<Object, Object> createDefaultSettings(
 			BundleContext context) {
-		final String PROPERTY_PREFIX = "org.eclipse.equinox.http.jetty."; //$NON-NLS-1$
 		Dictionary<Object, Object> defaultSettings = new Hashtable<Object, Object>();
 
 		// PID
@@ -249,7 +239,7 @@ public class HttpService implements HttpAdminService, RequestService {
 	}
 
 	public void removeRequestInterceptors(HttpRequestInterceptor interceptor) {
-		requestInterceptors.remove(interceptor);
+		getRequestInterceptors().remove(interceptor);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -274,7 +264,7 @@ public class HttpService implements HttpAdminService, RequestService {
 		else{
 			settings.put(JettyConstants.HTTP_PORT, getPort(httpServer));
 		}
-		settings.put("HTTP_SERVER_NAME", httpServer.getSymbolicName());
+		settings.put(JettyConstants.HTTP_SERVER_NAME, httpServer.getSymbolicName());
 		try {
 			httpServerManager.updated(DEFAULT_PID, settings);
 		} catch (ConfigurationException exp) {
@@ -300,11 +290,15 @@ public class HttpService implements HttpAdminService, RequestService {
 	}
 
 	protected HttpServerManager createHttpServerManager() {
-		return new HttpServerManager(requestInterceptors, jettyWorkDir, requestContext);
+		return new HttpServerManager(getRequestInterceptors(), jettyWorkDir, requestContext);
 	}
 
-	public List<DefaultHttpServerInstance> getHttpServerInstances() {
+	public List<HttpServerInstance> getHttpServerInstances() {
 		return httpServerInstances;
+	}
+
+	public List<HttpRequestInterceptor> getRequestInterceptors() {
+		return requestInterceptors;
 	}
 
 }
