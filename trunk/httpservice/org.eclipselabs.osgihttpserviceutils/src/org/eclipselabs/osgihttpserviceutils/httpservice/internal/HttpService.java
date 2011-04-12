@@ -239,7 +239,7 @@ public class HttpService implements HttpAdminService, RequestService {
 	}
 
 	public void removeRequestInterceptors(HttpRequestInterceptor interceptor) {
-		getRequestInterceptors().remove(interceptor);
+		requestInterceptors.remove(interceptor);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -290,7 +290,7 @@ public class HttpService implements HttpAdminService, RequestService {
 	}
 
 	protected HttpServerManager createHttpServerManager() {
-		return new HttpServerManager(getRequestInterceptors(), jettyWorkDir, requestContext);
+		return new HttpServerManager(requestInterceptors, jettyWorkDir, requestContext);
 	}
 
 	public List<HttpServerInstance> getHttpServerInstances() {

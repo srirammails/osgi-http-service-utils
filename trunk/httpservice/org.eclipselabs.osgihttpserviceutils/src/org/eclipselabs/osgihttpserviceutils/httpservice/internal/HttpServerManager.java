@@ -491,7 +491,7 @@ public class HttpServerManager implements ManagedServiceFactory {
 
 		ServletHolder holder = new ServletHolder(
 				new InternalHttpServiceServlet(requestContext,
-						requestInterceptors));
+						getRequestInterceptors()));
 		holder.setInitOrder(0);
 		holder.setInitParameter(Constants.SERVICE_VENDOR, "Eclipse.org"); //$NON-NLS-1$
 		holder.setInitParameter(Constants.SERVICE_DESCRIPTION,
@@ -564,5 +564,11 @@ public class HttpServerManager implements ManagedServiceFactory {
 			throw new ConfigurationException(pid, e.getMessage(), e);
 		}
 		this.servers.put(pid, server);
+	}
+
+
+
+	public List<HttpRequestInterceptor> getRequestInterceptors() {
+		return requestInterceptors;
 	}
 }

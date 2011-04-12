@@ -49,6 +49,8 @@ public class HttpServiceTest {
 	HttpServer httpServer;
 	
 	HttpService httpService;
+	
+	String httpEnablePropertyValue;
 
 	@Before public void setUp() throws Exception {
 		httpService = createHttService();
@@ -73,13 +75,16 @@ public class HttpServiceTest {
 			will(returnValue(null));
 		}});
 		httpService.activate(bundleContext);
+		
+		httpEnablePropertyValue = "true";
 	}
 	
 	@After public void tearDown(){
 		resetJettyConfigurationArea();
+		System.clearProperty("org.osgi.service.http." + httpServer.getSymbolicName() + ".port");
 	}
 	
-	@Test public void startServer_withConfiguredPort() throws Exception {
+	@Test public void startServer() throws Exception {
 		mockBundleContextProperties();
 		settings.put(JettyConstants.HTTP_PORT, httpServer.getPort());
 		settings.put(JettyConstants.HTTP_SERVER_NAME, httpServer.getSymbolicName());
@@ -88,7 +93,17 @@ public class HttpServiceTest {
 		assertThat(httpServer.start(), isIn(httpService.getHttpServerInstances()));
 	}
 	
-	@Test public void startServer_WithNoConfiguredPort() throws Exception {
+	@Test public void startServer_HttpEnablePropertyNotSet() throws Exception {
+		httpEnablePropertyValue = null;
+		mockBundleContextProperties();
+		settings.put(JettyConstants.HTTP_PORT, httpServer.getPort());
+		settings.put(JettyConstants.HTTP_SERVER_NAME, httpServer.getSymbolicName());
+		mockHttpServerManagerUpdate();
+		mockBundleContextRegisterService();
+		assertThat(httpServer.start(), isIn(httpService.getHttpServerInstances()));
+	}
+	
+	@Test public void startServer_WithJettyConfiguration() throws Exception {
 		mockBundleContextProperties();
 		setupJettyConfigurationArea();
 		settings.put(JettyConstants.JETTY_XML_CONFIGURATION, true);
@@ -96,6 +111,24 @@ public class HttpServiceTest {
 		mockHttpServerManagerUpdate();
 		mockBundleContextRegisterService();
 		assertThat(httpServer.port(0).start(), isIn(httpService.getHttpServerInstances()));
+	}
+	
+	@Test public void startServer_WithSystemPropertyConfiguration() throws Exception {
+		resetJettyConfigurationArea();
+		System.setProperty("org.osgi.service.http." + httpServer.getSymbolicName() + ".port", "9090");
+		mockBundleContextProperties();
+		settings.put(JettyConstants.HTTP_PORT, 9090);
+		settings.put(JettyConstants.HTTP_SERVER_NAME, httpServer.getSymbolicName());
+		mockHttpServerManagerUpdate();
+		mockBundleContextRegisterService();
+		assertThat(httpServer.port(0).start(), isIn(httpService.getHttpServerInstances()));
+	}
+	
+	@Test(expected = HttpServiceInternalException.class) 
+	public void startServer_NoConfiguration() {
+		resetJettyConfigurationArea();
+		mockBundleContextProperties();
+		httpServer.port(0).start();
 	}
 	
 	@Test(expected = HttpServiceInternalException.class)
@@ -168,6 +201,29 @@ public class HttpServiceTest {
 		assertThat(httpService.getHttpServerInstances(), hasSize(0));
 	}
 	
+	@Test public void createHttpServer() throws Exception {
+		assertThat(httpServer, is(httpService.createHttpServer(httpServer.getSymbolicName())));
+	}
+	
+	@Test public void getRequestContext() throws Exception {
+		assertThat(httpService.getRequestContext(), not(nullValue()));
+	}
+	
+	@Test public void removeRequestInterceptors() throws Exception {
+		HttpRequestInterceptor requestInterceptor = mockery.mock(HttpRequestInterceptor.class);
+		httpService.addRequestInterceptors(requestInterceptor);
+		httpService.removeRequestInterceptors(requestInterceptor);
+		assertThat(httpService.getRequestInterceptors(), not(contains(requestInterceptor)));
+	}
+	
+	@Test public void createHttpServerManager_RequestInterceptors() throws Exception {
+		httpService = new HttpService();
+		HttpRequestInterceptor requestInterceptor = mockery.mock(HttpRequestInterceptor.class);
+		httpService.addRequestInterceptors(requestInterceptor);
+		HttpServerManager httpServerManager = httpService.createHttpServerManager();
+		assertThat(httpServerManager.getRequestInterceptors(), contains(requestInterceptor));
+	}
+	
 	HttpService createHttService(){
 		return new HttpService(){
 			protected HttpServerManager createHttpServerManager() {
@@ -190,7 +246,7 @@ public class HttpServiceTest {
 	void mockBundleContextProperties() {
 		mockery.checking(new Expectations(){{
 			oneOf(bundleContext).getProperty(HttpService.PROPERTY_PREFIX + JettyConstants.HTTP_ENABLED);
-			will(returnValue("true"));
+			will(returnValue(httpEnablePropertyValue));
 			
 			oneOf(bundleContext).getProperty(HttpService.PROPERTY_PREFIX + JettyConstants.HTTP_HOST);
 			will(returnValue("0.0.0.0"));
