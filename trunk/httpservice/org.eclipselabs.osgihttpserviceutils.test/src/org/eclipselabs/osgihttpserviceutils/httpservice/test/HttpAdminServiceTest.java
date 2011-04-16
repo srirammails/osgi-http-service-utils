@@ -112,7 +112,7 @@ public class HttpAdminServiceTest extends OSGiTestCase
     GetMethod externalRequest = new GetMethod("http://localhost:8080/hello");
     assertEquals(404, httpClient.executeMethod(externalRequest));
 
-    new GetMethod("http://localhost:8090/hello");
+    externalRequest = new GetMethod("http://localhost:8090/hello");
     assertEquals(404, httpClient.executeMethod(externalRequest));
   }
   
