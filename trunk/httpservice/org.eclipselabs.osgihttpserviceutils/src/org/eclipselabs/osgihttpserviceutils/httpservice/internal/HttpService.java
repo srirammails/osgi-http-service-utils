@@ -166,6 +166,11 @@ public class HttpService implements HttpAdminService, RequestService {
 		if (otherInfo != null) {
 			defaultSettings.put(JettyConstants.OTHER_INFO, otherInfo);
 		}
+		
+		String customizerClass = System.getProperty(PROPERTY_PREFIX + JettyConstants.CUSTOMIZER_CLASS);
+    if (customizerClass != null) {
+      defaultSettings.put(JettyConstants.CUSTOMIZER_CLASS, customizerClass);
+    }
 
 		return defaultSettings;
 	}
