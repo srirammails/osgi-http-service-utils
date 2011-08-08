@@ -233,8 +233,6 @@ public class HttpServerManager implements ManagedServiceFactory {
 		this.requestContext = requestContext;
 	}
 
-	
-
 	@SuppressWarnings("rawtypes")
 	private Connector createHttpConnector(Dictionary dictionary) {
 		Boolean httpEnabled = (Boolean) dictionary
@@ -489,9 +487,9 @@ public class HttpServerManager implements ManagedServiceFactory {
 		deleted(pid);
 		String serverName = dictionary.get("HTTP_SERVER_NAME").toString();
 		Server server = new Server();
-		
-    JettyCustomizer customizer = createJettyCustomizer(dictionary);
-		
+
+		JettyCustomizer customizer = createJettyCustomizer(dictionary);
+
 		ServletHolder holder = new ServletHolder(
 				new InternalHttpServiceServlet(requestContext,
 						getRequestInterceptors()));
@@ -500,14 +498,15 @@ public class HttpServerManager implements ManagedServiceFactory {
 		holder.setInitParameter(Constants.SERVICE_DESCRIPTION,
 				"Equinox Jetty-based Http Service"); //$NON-NLS-1$
 		holder.setInitParameter("http.service.name", serverName);
-		
+
 		Map props = (Map) dictionary.get("HTTP_SERVER_CUSTOM_SERVICE_PROPS");
-		for (Object key : props.keySet()){
-		  if(props.get(key) != null){
-		    holder.setInitParameter(key.toString(), props.get(key).toString());
-		  }
+		for (Object key : props.keySet()) {
+			if (props.get(key) != null) {
+				holder.setInitParameter(key.toString(), props.get(key)
+						.toString());
+			}
 		}
-		
+
 		if (dictionary.get("JETTY_XML_CONFIGURATION") != null) {
 			try {
 				File jettyConfiguration = JettyConfigurationUtils
@@ -527,13 +526,15 @@ public class HttpServerManager implements ManagedServiceFactory {
 		} else {
 			Connector httpConnector = createHttpConnector(dictionary);
 			if (null != customizer)
-			  httpConnector = (Connector) customizer.customizeHttpConnector(httpConnector, dictionary);
+				httpConnector = (Connector) customizer.customizeHttpConnector(
+						httpConnector, dictionary);
 			if (httpConnector != null) {
 				server.addConnector(httpConnector);
 			}
 			Connector httpsConnector = createHttpsConnector(dictionary);
 			if (null != customizer)
-        httpConnector = (Connector) customizer.customizeHttpConnector(httpsConnector, dictionary);
+				httpConnector = (Connector) customizer.customizeHttpConnector(
+						httpsConnector, dictionary);
 			if (httpsConnector != null) {
 				server.addConnector(httpsConnector);
 			}
@@ -563,8 +564,9 @@ public class HttpServerManager implements ManagedServiceFactory {
 
 		}
 		Context httpContext = createHttpContext(dictionary);
-		if (null != customizer){
-      httpContext = (Context) customizer.customizeContext(httpContext, dictionary);
+		if (null != customizer) {
+			httpContext = (Context) customizer.customizeContext(httpContext,
+					dictionary);
 		}
 		httpContext.addServlet(holder, "/*"); //$NON-NLS-1$
 		server.addHandler(httpContext);
@@ -577,16 +579,18 @@ public class HttpServerManager implements ManagedServiceFactory {
 	}
 
 	private JettyCustomizer createJettyCustomizer(Dictionary dictionary) {
-    String customizerClass = (String) dictionary.get(JettyConstants.CUSTOMIZER_CLASS);
-    if (null == customizerClass)
-      return null;
-    try {
-      return (JettyCustomizer) Class.forName(customizerClass).newInstance();
-    } catch (Exception e) {
-      LOG.error("Faild to create the jetty customizer!", e);
-      return null;
-    }
-  }
+		String customizerClass = (String) dictionary
+				.get(JettyConstants.CUSTOMIZER_CLASS);
+		if (null == customizerClass)
+			return null;
+		try {
+			return (JettyCustomizer) Class.forName(customizerClass)
+					.newInstance();
+		} catch (Exception e) {
+			LOG.error("Faild to create the jetty customizer!", e);
+			return null;
+		}
+	}
 
 	public List<HttpRequestInterceptor> getRequestInterceptors() {
 		return requestInterceptors;

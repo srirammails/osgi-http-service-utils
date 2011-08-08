@@ -69,12 +69,13 @@ public class HttpService implements HttpAdminService, RequestService {
 		}
 
 	}
-	
+
 	final static String PROPERTY_PREFIX = "org.eclipselabs.osgihttpserviceutils.httpservice."; //$NON-NLS-1$
-	
+
 	static final String DEFAULT_PID = "default"; //$NON-NLS-1$
 
-	private static final Logger LOG = LoggerFactory.getLogger(HttpService.class);
+	private static final Logger LOG = LoggerFactory
+			.getLogger(HttpService.class);
 
 	private static final String LOG_STDERR_THRESHOLD = "org.eclipse.equinox.http.jetty.log.stderr.threshold"; //$NON-NLS-1$
 
@@ -87,7 +88,7 @@ public class HttpService implements HttpAdminService, RequestService {
 	private final List<HttpServerInstance> httpServerInstances = new ArrayList<HttpServerInstance>();
 
 	private File jettyWorkDir;
-	
+
 	private final DefaultRequestContext requestContext = new DefaultRequestContext();
 
 	private final List<HttpRequestInterceptor> requestInterceptors = new LinkedList<HttpRequestInterceptor>();
@@ -105,7 +106,7 @@ public class HttpService implements HttpAdminService, RequestService {
 
 	@Reference(unbind = "removeRequestInterceptors", multiple = true, optional = true, dynamic = true)
 	public void addRequestInterceptors(HttpRequestInterceptor interceptor) {
-		 requestInterceptors.add(interceptor);
+		requestInterceptors.add(interceptor);
 	}
 
 	protected Dictionary<Object, Object> createDefaultSettings(
@@ -136,8 +137,7 @@ public class HttpService implements HttpAdminService, RequestService {
 
 		// HTTPS Enabled (default is false)
 		Boolean httpsEnabled = Boolean.valueOf(context
-				.getProperty(PROPERTY_PREFIX
-				+ JettyConstants.HTTPS_ENABLED));
+				.getProperty(PROPERTY_PREFIX + JettyConstants.HTTPS_ENABLED));
 		defaultSettings.put(JettyConstants.HTTPS_ENABLED, httpsEnabled);
 
 		// Servlet Context Path
@@ -166,11 +166,13 @@ public class HttpService implements HttpAdminService, RequestService {
 		if (otherInfo != null) {
 			defaultSettings.put(JettyConstants.OTHER_INFO, otherInfo);
 		}
-		
-		String customizerClass = System.getProperty(PROPERTY_PREFIX + JettyConstants.CUSTOMIZER_CLASS);
-    if (customizerClass != null) {
-      defaultSettings.put(JettyConstants.CUSTOMIZER_CLASS, customizerClass);
-    }
+
+		String customizerClass = System.getProperty(PROPERTY_PREFIX
+				+ JettyConstants.CUSTOMIZER_CLASS);
+		if (customizerClass != null) {
+			defaultSettings.put(JettyConstants.CUSTOMIZER_CLASS,
+					customizerClass);
+		}
 
 		return defaultSettings;
 	}
@@ -178,7 +180,7 @@ public class HttpService implements HttpAdminService, RequestService {
 	@Override
 	public HttpServer createHttpServer(String symbolicName) {
 		final String method = "createHttpServer(): ";
-		if(servers.containsKey(symbolicName)){
+		if (servers.containsKey(symbolicName)) {
 			LOG.warn(method
 					+ "server with symbolic name {} is already running!",
 					symbolicName);
@@ -233,8 +235,7 @@ public class HttpService implements HttpAdminService, RequestService {
 			throw new HttpServiceInternalException(
 					"No HTTP Port is configured for the server " + name);
 		}
-		LOG.debug(method + "The port of the http server {} is {}", name,
-				port);
+		LOG.debug(method + "The port of the http server {} is {}", name, port);
 		return port;
 	}
 
@@ -262,20 +263,21 @@ public class HttpService implements HttpAdminService, RequestService {
 	public DefaultHttpServerInstance startServer(final HttpServer httpServer) {
 		HttpServerManager httpServerManager = createHttpServerManager();
 		Dictionary<Object, Object> settings = createDefaultSettings(context);
-		settings.put("HTTP_SERVER_CUSTOM_SERVICE_PROPS", httpServer.getServiceProperties());
+		settings.put("HTTP_SERVER_CUSTOM_SERVICE_PROPS",
+				httpServer.getServiceProperties());
 		if (JettyConfigurationUtils.existsJettyXmlConfiguration(httpServer)) {
 			settings.put(JettyConstants.JETTY_XML_CONFIGURATION, true);
-		}
-		else{
+		} else {
 			settings.put(JettyConstants.HTTP_PORT, getPort(httpServer));
 		}
-		settings.put(JettyConstants.HTTP_SERVER_NAME, httpServer.getSymbolicName());
+		settings.put(JettyConstants.HTTP_SERVER_NAME,
+				httpServer.getSymbolicName());
 		try {
 			httpServerManager.updated(DEFAULT_PID, settings);
 		} catch (ConfigurationException exp) {
 			throw new HttpServiceInternalException(exp);
 		}
-		
+
 		Dictionary<Object, Object> serviceProps = new Hashtable<Object, Object>();
 		ServiceRegistration httpServiceRegistration = context.registerService(
 				ManagedServiceFactory.class.getName(), httpServerManager,
@@ -295,7 +297,8 @@ public class HttpService implements HttpAdminService, RequestService {
 	}
 
 	protected HttpServerManager createHttpServerManager() {
-		return new HttpServerManager(requestInterceptors, jettyWorkDir, requestContext);
+		return new HttpServerManager(requestInterceptors, jettyWorkDir,
+				requestContext);
 	}
 
 	public List<HttpServerInstance> getHttpServerInstances() {

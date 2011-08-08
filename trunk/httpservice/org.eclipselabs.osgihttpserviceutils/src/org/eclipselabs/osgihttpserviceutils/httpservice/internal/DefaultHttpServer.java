@@ -10,7 +10,7 @@ public abstract class DefaultHttpServer implements HttpServer {
 	private int httpPort = 0;
 
 	private final Map<Object, Object> serviceProps = new HashMap<Object, Object>();
-	
+
 	private final String symbolicName;
 
 	public DefaultHttpServer(String symbolicName) {
@@ -23,10 +23,9 @@ public abstract class DefaultHttpServer implements HttpServer {
 	}
 
 	@Override
-  public Map<Object, Object> getServiceProperties()
-  {
-    return serviceProps;
-  }
+	public Map<Object, Object> getServiceProperties() {
+		return serviceProps;
+	}
 
 	@Override
 	public String getSymbolicName() {
@@ -38,20 +37,20 @@ public abstract class DefaultHttpServer implements HttpServer {
 		setPort(httpPort);
 		return this;
 	}
-	
+
 	@Override
-  public HttpServer serviceProperties(Map<?, ?> serviceProperties){
-	  serviceProps.putAll(serviceProperties);
-	  return this;
-	}
-	
-	@Override
-  public HttpServer serviceProperty(Object key, Object value){
-	  serviceProps.put(key, value);
-	  return this;
+	public HttpServer serviceProperties(Map<?, ?> serviceProperties) {
+		serviceProps.putAll(serviceProperties);
+		return this;
 	}
 
-  @Override
+	@Override
+	public HttpServer serviceProperty(Object key, Object value) {
+		serviceProps.put(key, value);
+		return this;
+	}
+
+	@Override
 	public void setPort(int port) {
 		this.httpPort = port;
 	}
