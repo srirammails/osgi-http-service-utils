@@ -20,12 +20,25 @@
         jetty bundle (http://www.eclipse.org/equinox/).
     </description>
 
+	<url>http://code.google.com/a/eclipselabs.org/p/osgi-http-service-utils/</url>
+
 	<licenses>
 		<license>
 			<name>Eclipse Public License - v 1.0</name>
 			<url>http://www.eclipse.org/legal/epl-v10.html</url>
 		</license>
 	</licenses>
+
+	<developers>
+		<developer>
+			<name>Christian Baranowski</name>
+			<organization>SEITENBAU Gmbh</organization>
+		</developer>
+		<developer>
+			<name>Nicola Tesser</name>
+			<organization>SEITENBAU Gmbh</organization>
+		</developer>
+	</developers>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
