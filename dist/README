@@ -1,0 +1,4 @@
+HTTP Service Utils - 0.2.0
+--------------------------
+Run the distribution :
+java -jar plugins/org.eclipse.osgi-3.6.1.jar -configuration configuration -console
