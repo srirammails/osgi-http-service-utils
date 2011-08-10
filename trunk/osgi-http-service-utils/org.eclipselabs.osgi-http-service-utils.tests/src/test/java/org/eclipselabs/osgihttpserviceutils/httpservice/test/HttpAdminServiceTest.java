@@ -1,12 +1,12 @@
 package org.eclipselabs.osgihttpserviceutils.httpservice.test;
 
-import static org.junit.Assert.*;
-import static org.ops4j.pax.exam.CoreOptions.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
 import java.util.HashMap;
@@ -17,9 +17,9 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.io.IOUtils;
 import org.eclipselabs.osgihttpserviceutils.httpservice.HttpAdminService;
 import org.eclipselabs.osgihttpserviceutils.httpservice.HttpServerInstance;
+import org.eclipselabs.osgihttpserviceutils.httpservice.test.utils.HttpUtilsPaxExamn;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.ops4j.pax.exam.Inject;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.Configuration;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
@@ -32,7 +32,7 @@ import org.osgi.util.tracker.ServiceTracker;
 
 @RunWith(JUnit4TestRunner.class)
 public class HttpAdminServiceTest {
-	
+
 	HttpServerInstance externalServerInstance;
 
 	ServiceTracker httpAdminServiceTracker;
@@ -42,34 +42,14 @@ public class HttpAdminServiceTest {
 	HttpServerInstance jettyXmlServerInstance;
 
 	HttpAdminService httpAdminService;
-	
+
 	BundleContext bundleContext;
-	
+
 	@Configuration()
 	public Option[] config() {
-		return options(
-//				uncomment for remote debugging the test
-//				vmOption("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
-				junitBundles(),
-				equinox(), 		// run test on eclipse equinox OSGi implementation
-//				felix(), 		// run test on eclipse Felix OSGi implementation
-				provision(
-				mavenBundle("org.osgi", "org.osgi.compendium", "4.2.0"),
-				mavenBundle("commons-io", "commons-io", "2.0.1"),
-				mavenBundle("org.slf4j", "slf4j-api", "1.6.1"),
-				mavenBundle("org.slf4j", "slf4j-simple", "1.6.1"),
-				mavenBundle("org.mortbay.jetty", "servlet-api", "3.0.20100224"),
-				mavenBundle("org.mortbay.jetty", "jetty", "6.1.26"),
-				mavenBundle("org.mortbay.jetty", "jetty-util", "6.1.26"),
-				mavenBundle("org.eclipse.equinox.http", "servlet", "1.0.0-v20070606"),
-				mavenBundle("org.apache.felix", "org.apache.felix.scr","1.6.0"),
-				wrappedBundle(mavenBundle("commons-httpclient", "commons-httpclient", "3.1")),
-				wrappedBundle(mavenBundle("commons-codec", "commons-codec", "1.3")),
-				scanDir("../org.eclipselabs.osgi-http-service-utils.api/target").filter("*.jar"),
-				scanDir("../org.eclipselabs.osgi-http-service-utils.internal/target").filter("*.jar"))
-		);
+		return HttpUtilsPaxExamn.config();
 	}
-	
+
 	void setup() throws Exception {
 		httpAdminServiceTracker = new ServiceTracker(bundleContext,
 				HttpAdminService.class.getName(), null);
@@ -100,16 +80,17 @@ public class HttpAdminServiceTest {
 		jettyXmlServerInstance = httpAdminService.createHttpServer(
 				"jetty-sample").start();
 	}
-	
+
 	void tearDown() throws Exception {
-		 internalServerInstance.shutdown();
-		 externalServerInstance.shutdown();
-		 jettyXmlServerInstance.shutdown();
-		 httpAdminServiceTracker.close();
+		internalServerInstance.shutdown();
+		externalServerInstance.shutdown();
+		jettyXmlServerInstance.shutdown();
+		httpAdminServiceTracker.close();
 	}
-	
+
 	@Test
-	public void testCustomServiceProperty_External(BundleContext bundleContext) throws Exception {
+	public void testCustomServiceProperty_External(BundleContext bundleContext)
+			throws Exception {
 		this.bundleContext = bundleContext;
 		setup();
 		try {
@@ -131,11 +112,12 @@ public class HttpAdminServiceTest {
 	}
 
 	@Test
-	public void testCustomServiceProperty_Internal(BundleContext bundleContext) throws Exception {
+	public void testCustomServiceProperty_Internal(BundleContext bundleContext)
+			throws Exception {
 		this.bundleContext = bundleContext;
 		setup();
 		try {
-		String filterString = "(&(" + Constants.OBJECTCLASS + "="
+			String filterString = "(&(" + Constants.OBJECTCLASS + "="
 					+ HttpService.class.getName()
 					+ ")(external.http.service=false))";
 			Filter filter = bundleContext.createFilter(filterString);
@@ -175,12 +157,14 @@ public class HttpAdminServiceTest {
 	}
 
 	@Test
-	public void testShutdownHttpServer(BundleContext bundleContext) throws Exception {
+	public void testShutdownHttpServer(BundleContext bundleContext)
+			throws Exception {
 		this.bundleContext = bundleContext;
 		setup();
 		try {
 			HttpClient httpClient = new HttpClient();
-			GetMethod internalRequest = new GetMethod("http://localhost:9090/hello");
+			GetMethod internalRequest = new GetMethod(
+					"http://localhost:9090/hello");
 			assertEquals(404, httpClient.executeMethod(internalRequest));
 			internalServerInstance.shutdown();
 			try {
@@ -189,8 +173,7 @@ public class HttpAdminServiceTest {
 			} catch (ConnectException exp) {
 				assertTrue(true);
 			}
-		}
-		finally {
+		} finally {
 			tearDown();
 		}
 	}
