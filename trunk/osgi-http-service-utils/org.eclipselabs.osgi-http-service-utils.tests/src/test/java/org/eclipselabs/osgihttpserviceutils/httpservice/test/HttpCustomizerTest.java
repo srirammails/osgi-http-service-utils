@@ -26,6 +26,7 @@ public class HttpCustomizerTest {
 	@Configuration()
 	public Option[] config() {
 		return options(
+//				uncomment for remote debugging the test
 //				vmOption("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
 				systemProperty("osgi.console").value("console"),
 				junitBundles(),
