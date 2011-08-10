@@ -31,7 +31,7 @@ public class HttpCustomizerTest {
 				systemProperty("osgi.console").value("console"),
 				junitBundles(),
 				equinox(),
-				felix(),
+//				felix(),
 				provision(
 					mavenBundle("org.osgi", "org.osgi.compendium", "4.2.0"),
 					mavenBundle("commons-io", "commons-io", "2.0.1"),
