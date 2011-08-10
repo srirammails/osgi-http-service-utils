@@ -52,7 +52,7 @@ public class HttpAdminServiceTest {
 //				vmOption("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
 				junitBundles(),
 				equinox(), 		// run test on eclipse equinox OSGi implementation
-				felix(), 		// run test on eclipse Felix OSGi implementation
+//				felix(), 		// run test on eclipse Felix OSGi implementation
 				provision(
 				mavenBundle("org.osgi", "org.osgi.compendium", "4.2.0"),
 				mavenBundle("commons-io", "commons-io", "2.0.1"),

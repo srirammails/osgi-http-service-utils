@@ -39,7 +39,7 @@ public class HttpRequestInterceptorTest {
 //				vmOption("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
 				junitBundles(),
 				equinox(),
-				felix(),
+//				felix(),
 				provision(
 				mavenBundle("org.osgi", "org.osgi.compendium", "4.2.0"),
 				mavenBundle("commons-io", "commons-io", "2.0.1"),
