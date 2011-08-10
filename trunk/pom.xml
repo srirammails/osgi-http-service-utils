@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
@@ -85,7 +86,7 @@
 					<framework>equinox</framework>
 					<provision>
 						<param>
-						  --vmOptions=-Dorg.eclipselabs.osgihttpserviceutils.httpservice.customizer.class=org.eclipselabs.osgihttpserviceutils.httpservice.demo.customizer.JettyCustomizerDemo
+							--vmOptions=-Dorg.eclipselabs.osgihttpserviceutils.httpservice.customizer.class=org.eclipselabs.osgihttpserviceutils.httpservice.demo.customizer.JettyCustomizerDemo
 						</param>
 					</provision>
 				</configuration>
@@ -242,5 +243,15 @@
 		<developerConnection>scm:svn:https://svn.codespot.com/a/eclipselabs.org/osgi-http-service-utils/trunk</developerConnection>
 		<url>http://svn.codespot.com/a/eclipselabs.org/osgi-http-service-utils/trunk</url>
 	</scm>
+
+	<profile>
+		<!-- Used only when invoking release:perform so as not to re-run tests 
+			as part of the deployment -->
+		<id>release</id>
+		<properties>
+			<skipTests>true</skipTests>
+		</properties>
+	</profile>
+
 
 </project>
