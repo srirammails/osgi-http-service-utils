@@ -9,7 +9,7 @@
 
 	<groupId>org.eclipselabs</groupId>
 	<artifactId>osgi-http-service-utils</artifactId>
-	<version>0.3.0</version>
+	<version>0.3.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>OSGi HTTP Service Utils</name>
@@ -238,9 +238,9 @@
 	</modules>
 
 	<scm>
-		<connection>scm:svn:https://svn.codespot.com/a/eclipselabs.org/osgi-http-service-utils/tags/osgi-http-service-utils-0.3.0</connection>
-		<developerConnection>scm:svn:https://svn.codespot.com/a/eclipselabs.org/osgi-http-service-utils/tags/osgi-http-service-utils-0.3.0</developerConnection>
-		<url>http://svn.codespot.com/a/eclipselabs.org/osgi-http-service-utils/tags/osgi-http-service-utils-0.3.0</url>
+		<connection>scm:svn:https://svn.codespot.com/a/eclipselabs.org/osgi-http-service-utils/trunk</connection>
+		<developerConnection>scm:svn:https://svn.codespot.com/a/eclipselabs.org/osgi-http-service-utils/trunk</developerConnection>
+		<url>http://svn.codespot.com/a/eclipselabs.org/osgi-http-service-utils/trunk</url>
 	</scm>
 
 	<profiles>
