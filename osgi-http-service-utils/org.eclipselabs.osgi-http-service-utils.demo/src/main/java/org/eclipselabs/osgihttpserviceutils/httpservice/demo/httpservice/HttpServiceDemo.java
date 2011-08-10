@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import aQute.bnd.annotation.component.Activate;
 import aQute.bnd.annotation.component.Component;
+import aQute.bnd.annotation.component.Deactivate;
 import aQute.bnd.annotation.component.Reference;
 
 @Component
@@ -55,6 +56,11 @@ public class HttpServiceDemo {
 		defaultHttpService.registerServlet("/hello", new DemoServlet(), initparams , httpContext);
 		logger.info("Now invoke HTTP Service under URL : http://localhost:9090/hello");
 		logger.info("For details why the port is 9090 see RequestLoggerDemoJettyCustomizer.");
+	}
+	
+	@Deactivate
+	public void stop() throws Exception {
+		defaultHttpService.unregister("/hello");
 	}
 
 }
