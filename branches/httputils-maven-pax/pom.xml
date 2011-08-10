@@ -1,9 +1,16 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.sonatype.oss</groupId>
+		<artifactId>oss-parent</artifactId>
+		<version>7</version>
+	</parent>
+
 	<groupId>org.eclipselabs</groupId>
 	<artifactId>osgi-http-service-utils</artifactId>
-	<version>0.3.0</version>
+	<version>0.3.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>OSGi HTTP Service Utils</name>
@@ -212,5 +219,11 @@
 		<module>org.eclipselabs.osgi-http-service-utils.demo</module>
 		<module>org.eclipselabs.osgi-http-service-utils.tests</module>
 	</modules>
+
+	<scm>
+		<connection>scm:svn:https://svn.codespot.com/a/eclipselabs.org/osgi-http-service-utils/branches/httputils-maven-pax/</connection>
+		<developerConnection>scm:svn:https://svn.codespot.com/a/eclipselabs.org/osgi-http-service-utils/branches/httputils-maven-pax</developerConnection>
+		<url>http://svn.codespot.com/a/eclipselabs.org/osgi-http-service-utils/branches/httputils-maven-pax/</url>
+	</scm>
 
 </project>
