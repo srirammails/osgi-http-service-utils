@@ -1,3 +1,7 @@
+Http Service Utils Version 0.3.1
+--------------------------------
+- TODO
+
 Http Service Utils Version 0.3.0 
 --------------------------------
 - Switch back to maven based build with bnd and pax exam for testing
