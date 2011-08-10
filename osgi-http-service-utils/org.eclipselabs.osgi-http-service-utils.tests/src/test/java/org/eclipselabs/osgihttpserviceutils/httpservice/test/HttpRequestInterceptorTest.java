@@ -35,6 +35,7 @@ public class HttpRequestInterceptorTest {
 	@Configuration()
 	public Option[] config() {
 		return options(
+//				uncomment for remote debugging the test
 //				vmOption("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
 				junitBundles(),
 				equinox(),

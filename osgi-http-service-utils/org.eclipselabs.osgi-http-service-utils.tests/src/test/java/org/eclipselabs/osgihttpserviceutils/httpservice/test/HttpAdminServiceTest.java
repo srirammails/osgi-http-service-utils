@@ -48,10 +48,11 @@ public class HttpAdminServiceTest {
 	@Configuration()
 	public Option[] config() {
 		return options(
+//				uncomment for remote debugging the test
 //				vmOption("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
 				junitBundles(),
-				equinox(),
-				felix(),
+				equinox(), 		// run test on eclipse equinox OSGi implementation
+				felix(), 		// run test on eclipse Felix OSGi implementation
 				provision(
 				mavenBundle("org.osgi", "org.osgi.compendium", "4.2.0"),
 				mavenBundle("commons-io", "commons-io", "2.0.1"),
@@ -111,79 +112,87 @@ public class HttpAdminServiceTest {
 	public void testCustomServiceProperty_External(BundleContext bundleContext) throws Exception {
 		this.bundleContext = bundleContext;
 		setup();
-		
-		String filterString = "(&(" + Constants.OBJECTCLASS + "="
-				+ HttpService.class.getName()
-				+ ")(external.http.service=true))";
-		Filter filter = bundleContext.createFilter(filterString);
-		ServiceTracker httpExternalServiceTracker = new ServiceTracker(
-				bundleContext, filter, null);
-		httpExternalServiceTracker.waitForService(3000);
-		httpExternalServiceTracker.open();
-		ServiceReference serviceReference = httpExternalServiceTracker
-				.getServiceReference();
-		assertEquals("external",
-				serviceReference.getProperty("http.service.name"));
-		
-		tearDown();
+		try {
+			String filterString = "(&(" + Constants.OBJECTCLASS + "="
+					+ HttpService.class.getName()
+					+ ")(external.http.service=true))";
+			Filter filter = bundleContext.createFilter(filterString);
+			ServiceTracker httpExternalServiceTracker = new ServiceTracker(
+					bundleContext, filter, null);
+			httpExternalServiceTracker.waitForService(3000);
+			httpExternalServiceTracker.open();
+			ServiceReference serviceReference = httpExternalServiceTracker
+					.getServiceReference();
+			assertEquals("external",
+					serviceReference.getProperty("http.service.name"));
+		} finally {
+			tearDown();
+		}
 	}
 
 	@Test
 	public void testCustomServiceProperty_Internal(BundleContext bundleContext) throws Exception {
 		this.bundleContext = bundleContext;
 		setup();
-		
+		try {
 		String filterString = "(&(" + Constants.OBJECTCLASS + "="
-				+ HttpService.class.getName()
-				+ ")(external.http.service=false))";
-		Filter filter = bundleContext.createFilter(filterString);
-		ServiceTracker httpExternalServiceTracker = new ServiceTracker(
-				bundleContext, filter, null);
-		httpExternalServiceTracker.waitForService(3000);
-		httpExternalServiceTracker.open();
-		ServiceReference serviceReference = httpExternalServiceTracker
-				.getServiceReference();
-		assertEquals("internal",
-				serviceReference.getProperty("http.service.name"));
-		
-		tearDown();
+					+ HttpService.class.getName()
+					+ ")(external.http.service=false))";
+			Filter filter = bundleContext.createFilter(filterString);
+			ServiceTracker httpExternalServiceTracker = new ServiceTracker(
+					bundleContext, filter, null);
+			httpExternalServiceTracker.waitForService(3000);
+			httpExternalServiceTracker.open();
+			ServiceReference serviceReference = httpExternalServiceTracker
+					.getServiceReference();
+			assertEquals("internal",
+					serviceReference.getProperty("http.service.name"));
+		} finally {
+			tearDown();
+		}
 	}
 
 	@Test
-	public void testInternalAndExternalHttpService(BundleContext bundleContext) throws Exception {
+	public void testInternalAndExternalHttpService(BundleContext bundleContext)
+			throws Exception {
 		this.bundleContext = bundleContext;
 		setup();
-		
-		HttpClient httpClient = new HttpClient();
-		GetMethod internalRequest = new GetMethod("http://localhost:9090/hello");
-		assertEquals(404, httpClient.executeMethod(internalRequest));
+		try {
+			HttpClient httpClient = new HttpClient();
+			GetMethod internalRequest = new GetMethod(
+					"http://localhost:9090/hello");
+			assertEquals(404, httpClient.executeMethod(internalRequest));
 
-		GetMethod externalRequest = new GetMethod("http://localhost:8080/hello");
-		assertEquals(404, httpClient.executeMethod(externalRequest));
+			GetMethod externalRequest = new GetMethod(
+					"http://localhost:8080/hello");
+			assertEquals(404, httpClient.executeMethod(externalRequest));
 
-		externalRequest = new GetMethod("http://localhost:8090/hello");
-		assertEquals(404, httpClient.executeMethod(externalRequest));
-		
-		tearDown();
+			externalRequest = new GetMethod("http://localhost:8090/hello");
+			assertEquals(404, httpClient.executeMethod(externalRequest));
+		} finally {
+			tearDown();
+		}
 	}
 
 	@Test
 	public void testShutdownHttpServer(BundleContext bundleContext) throws Exception {
 		this.bundleContext = bundleContext;
 		setup();
-
-		HttpClient httpClient = new HttpClient();
-		GetMethod internalRequest = new GetMethod("http://localhost:9090/hello");
-		assertEquals(404, httpClient.executeMethod(internalRequest));
-		internalServerInstance.shutdown();
 		try {
-			httpClient.executeMethod(internalRequest);
-			fail("Connection refused expected!");
-		} catch (ConnectException exp) {
-			assertTrue(true);
+			HttpClient httpClient = new HttpClient();
+			GetMethod internalRequest = new GetMethod("http://localhost:9090/hello");
+			assertEquals(404, httpClient.executeMethod(internalRequest));
+			internalServerInstance.shutdown();
+			try {
+				httpClient.executeMethod(internalRequest);
+				fail("Connection refused expected!");
+			} catch (ConnectException exp) {
+				assertTrue(true);
+			}
 		}
-		
-		tearDown();
+		finally {
+			tearDown();
+		}
 	}
 
 }
