@@ -244,14 +244,16 @@
 		<url>http://svn.codespot.com/a/eclipselabs.org/osgi-http-service-utils/trunk</url>
 	</scm>
 
-	<profile>
-		<!-- Used only when invoking release:perform so as not to re-run tests 
-			as part of the deployment -->
-		<id>release</id>
-		<properties>
-			<skipTests>true</skipTests>
-		</properties>
-	</profile>
+	<profiles>
+		<profile>
+			<!-- Used only when invoking release:perform so as not to re-run tests 
+				as part of the deployment -->
+			<id>release</id>
+			<properties>
+				<skipTests>true</skipTests>
+			</properties>
+		</profile>
+	</profiles>
 
 
 </project>
