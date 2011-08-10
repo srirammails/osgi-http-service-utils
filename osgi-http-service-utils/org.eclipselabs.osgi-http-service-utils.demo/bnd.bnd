@@ -1,0 +1,3 @@
+Bundle-SymbolicName: ${project.artifactId}
+Private-Package: org.eclipselabs.osgihttpserviceutils.httpservice.demo
+Service-Component: org.eclipselabs.osgihttpserviceutils.httpservice.demo.*
