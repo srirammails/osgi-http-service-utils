@@ -9,6 +9,7 @@
 		<relativePath>..</relativePath>
 	</parent>
 
+	<groupId>org.eclipselabs.osgi-http-service-utils</groupId>
 	<artifactId>org.eclipselabs.osgi-http-service-utils.tests</artifactId>
 	<name>OSGi HTTP Service Utils - Integration Tests</name>
 	<packaging>jar</packaging>
