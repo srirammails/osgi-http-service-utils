@@ -20,6 +20,7 @@ import org.eclipselabs.osgihttpserviceutils.httpservice.HttpAdminService;
 import org.eclipselabs.osgihttpserviceutils.httpservice.HttpServerInstance;
 import org.eclipselabs.osgihttpserviceutils.httpservice.RequestContext;
 import org.eclipselabs.osgihttpserviceutils.httpservice.RequestService;
+import org.eclipselabs.osgihttpserviceutils.httpservice.test.utils.HttpUtilsPaxExamn;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Option;
@@ -32,33 +33,12 @@ import org.osgi.util.tracker.ServiceTracker;
 
 @RunWith(JUnit4TestRunner.class)
 public class RequestServiceTest {
-	
+
 	@Configuration()
 	public Option[] config() {
-		return options(
-//				uncomment for remote debugging the test
-//				vmOption("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
-				junitBundles(),
-				equinox(),
-//				felix(),
-				provision(
-				mavenBundle("org.osgi", "org.osgi.compendium", "4.2.0"),
-				mavenBundle("commons-io", "commons-io", "2.0.1"),
-				mavenBundle("org.slf4j", "slf4j-api", "1.6.1"),
-				mavenBundle("org.slf4j", "slf4j-simple", "1.6.1"),
-				mavenBundle("org.mortbay.jetty", "servlet-api", "3.0.20100224"),
-				mavenBundle("org.mortbay.jetty", "jetty", "6.1.26"),
-				mavenBundle("org.mortbay.jetty", "jetty-util", "6.1.26"),
-				mavenBundle("org.eclipse.equinox.http", "servlet", "1.0.0-v20070606"),
-				mavenBundle("org.apache.felix", "org.apache.felix.scr","1.6.0"),
-				wrappedBundle(mavenBundle("commons-httpclient", "commons-httpclient", "3.1")),
-				wrappedBundle(mavenBundle("commons-codec", "commons-codec", "1.3")),
-				scanDir("../org.eclipselabs.osgi-http-service-utils.api/target").filter("*.jar"),
-				scanDir("../org.eclipselabs.osgi-http-service-utils.internal/target").filter("*.jar"))
-		);
+		return HttpUtilsPaxExamn.config();
 	}
-	
-	
+
 	class Request extends Thread {
 
 		Throwable exp = null;
@@ -96,7 +76,7 @@ public class RequestServiceTest {
 	private RequestService requestService;
 
 	private ServiceTracker requestServiceTracker;
-	
+
 	BundleContext bundleContext;
 
 	TestServlet servlet = new TestServlet() {
@@ -151,33 +131,41 @@ public class RequestServiceTest {
 	}
 
 	@Test
-	public void testRequestContext_MulitpeRequests(BundleContext bundleContext) throws Exception {
+	public void testRequestContext_MulitpeRequests(BundleContext bundleContext)
+			throws Exception {
 		this.bundleContext = bundleContext;
 		setUp();
-		ArrayList<Request> requests = new ArrayList<Request>();
-		for (int i = 0; i < 100; i++) {
-			requests.add(new Request());
+		try {
+			ArrayList<Request> requests = new ArrayList<Request>();
+			for (int i = 0; i < 100; i++) {
+				requests.add(new Request());
+			}
+			for (Request request : requests) {
+				request.start();
+			}
+			for (Request request : requests) {
+				request.join();
+			}
+			for (Request request : requests) {
+				assertNull(request.exp);
+			}
+		} finally {
+			tearDown();
 		}
-		for (Request request : requests) {
-			request.start();
-		}
-		for (Request request : requests) {
-			request.join();
-		}
-		for (Request request : requests) {
-			assertNull(request.exp);
-		}
-		tearDown();
 	}
-	
+
 	@Test
-	public void testRequestContext_RequestIdSingleRequest(BundleContext bundleContext) throws Exception {
+	public void testRequestContext_RequestIdSingleRequest(
+			BundleContext bundleContext) throws Exception {
 		this.bundleContext = bundleContext;
 		setUp();
-		HttpClient httpClient = new HttpClient();
-		GetMethod request = new GetMethod("http://localhost:9090/hello");
-		assertEquals(200, httpClient.executeMethod(request));
-		tearDown();
+		try {
+			HttpClient httpClient = new HttpClient();
+			GetMethod request = new GetMethod("http://localhost:9090/hello");
+			assertEquals(200, httpClient.executeMethod(request));
+		} finally {
+			tearDown();
+		}
 	}
-	
+
 }

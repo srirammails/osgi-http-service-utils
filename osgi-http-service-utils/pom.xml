@@ -84,6 +84,11 @@
 				<version>1.5</version>
 				<configuration>
 					<framework>equinox</framework>
+					<provision>
+						<param>
+						  --vmOptions=-Dorg.eclipselabs.osgihttpserviceutils.httpservice.customizer.class=org.eclipselabs.osgihttpserviceutils.httpservice.demo.customizer.JettyCustomizerDemo
+						</param>
+					</provision>
 				</configuration>
 			</plugin>
 
