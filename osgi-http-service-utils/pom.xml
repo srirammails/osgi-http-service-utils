@@ -234,7 +234,7 @@
 		<module>org.eclipselabs.osgi-http-service-utils.api</module>
 		<module>org.eclipselabs.osgi-http-service-utils.internal</module>
 		<module>org.eclipselabs.osgi-http-service-utils.demo</module>
-		<!-- <module>org.eclipselabs.osgi-http-service-utils.tests</module>  -->
+		<module>org.eclipselabs.osgi-http-service-utils.tests</module>
 	</modules>
 
 	<scm>
