@@ -4,7 +4,7 @@
 	<parent>
 		<artifactId>osgi-http-service-utils</artifactId>
 		<groupId>org.eclipselabs</groupId>
-		<version>0.3.1</version>
+		<version>0.3.2-SNAPSHOT</version>
 		<relativePath>..</relativePath>
 	</parent>
 
