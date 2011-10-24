@@ -27,8 +27,9 @@ public class HttpUtilsPaxExamn {
 				wrappedBundle(mavenBundle("cglib", "cglib-nodep", "2.2")),
 				wrappedBundle(mavenBundle("commons-httpclient", "commons-httpclient", "3.1")),
 				wrappedBundle(mavenBundle("commons-codec", "commons-codec", "1.3")),
-				scanDir("../org.eclipselabs.osgi-http-service-utils.api/target").filter("*.jar"),
-				scanDir("../org.eclipselabs.osgi-http-service-utils.internal/target").filter("*.jar")
+				
+				scanDir("../org.eclipselabs.osgi-http-service-utils.api/target").filter("*[^sources].jar"),
+				scanDir("../org.eclipselabs.osgi-http-service-utils.internal/target").filter("*[^sources].jar")
 			)
 		);
 	}
