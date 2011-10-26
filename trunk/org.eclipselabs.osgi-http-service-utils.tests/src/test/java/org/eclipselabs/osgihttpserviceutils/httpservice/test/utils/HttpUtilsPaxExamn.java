@@ -2,15 +2,18 @@ package org.eclipselabs.osgihttpserviceutils.httpservice.test.utils;
 
 import static org.ops4j.pax.exam.CoreOptions.*;
 
+import java.lang.management.ManagementFactory;
+
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.Configuration;
+import org.ops4j.pax.exam.options.extra.VMOption;
 
 public class HttpUtilsPaxExamn {
 
 	@Configuration()
 	public static Option[] config() {
 		return options(
-//			vmOption("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
+			vomDebugOptions(),
 			junitBundles(),
 			equinox(), 		
 			provision(
@@ -32,6 +35,30 @@ public class HttpUtilsPaxExamn {
 				scanDir("../org.eclipselabs.osgi-http-service-utils.internal/target").filter("*[^sources].jar")
 			)
 		);
+	}
+	
+	public static VMOption vomDebugOptions(){
+		if(isDebugMode()){
+			return vmOption("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005");
+		}
+		return null;
+	}
+	
+	public static boolean isDebugMode() {
+		String debugModePropValue = System.getProperty("test.debug");
+		if (debugModePropValue != null) {
+			if (debugModePropValue.equals("true")) {
+				return true;
+			}
+			return false;
+		} else {
+			try {
+				return ManagementFactory.getRuntimeMXBean().getInputArguments()
+						.toString().indexOf("-agentlib:jdwp") > 0;
+			} catch (Exception e) {
+				return false;
+			}
+		}
 	}
 	
 }

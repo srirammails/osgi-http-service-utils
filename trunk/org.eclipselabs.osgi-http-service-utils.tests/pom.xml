@@ -39,6 +39,12 @@
             <artifactId>org.eclipselabs.osgi-http-service-utils.internal</artifactId>
             <scope>provided</scope>
         </dependency>
+        
+        <dependency>
+			<groupId>org.mortbay.jetty</groupId>
+			<artifactId>jetty</artifactId>
+			<scope>provided</scope>
+		</dependency>
 
 		<dependency>
 			<groupId>commons-io</groupId>

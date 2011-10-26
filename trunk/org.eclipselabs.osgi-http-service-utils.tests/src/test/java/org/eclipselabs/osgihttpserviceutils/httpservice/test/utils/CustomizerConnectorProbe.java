@@ -1,12 +1,17 @@
 package org.eclipselabs.osgihttpserviceutils.httpservice.test.utils;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.easymock.EasyMock.*;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.Dictionary;
-import java.util.HashMap;
-import java.util.Map;
 
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.io.IOUtils;
 import org.easymock.Capture;
 import org.easymock.IAnswer;
 import org.eclipselabs.osgihttpserviceutils.httpservice.HttpAdminService;
@@ -16,7 +21,7 @@ import org.eclipselabs.osgihttpserviceutils.jettycustomizer.JettyTestCustomizer;
 import org.osgi.framework.BundleContext;
 import org.osgi.util.tracker.ServiceTracker;
 
-public class CustomizerProbe {
+public class CustomizerConnectorProbe {
 
 	JettyCustomizerService mockCustomizerService;
 
@@ -29,7 +34,9 @@ public class CustomizerProbe {
 				answer(contextCapture));
 		replay(mockCustomizerService);
 		JettyTestCustomizer.setJettyCustomizerService(mockCustomizerService);
-		startHttpServiceWithCustomizer(bundleContext);
+		
+		startAndVerifyHttpServiceWithCustomizer(bundleContext);
+		
 		verify(mockCustomizerService);
 		reset(mockCustomizerService);
 	}
@@ -43,7 +50,7 @@ public class CustomizerProbe {
 		};
 	}
 
-	private void startHttpServiceWithCustomizer(BundleContext bundleContext) throws Exception {
+	void startAndVerifyHttpServiceWithCustomizer(BundleContext bundleContext) throws Exception {
 
 		String customizeClassPropertyName = "org.eclipselabs.osgihttpserviceutils.httpservice.customizer.class";
 		System.setProperty(customizeClassPropertyName, JettyTestCustomizer.class.getName());
@@ -54,12 +61,19 @@ public class CustomizerProbe {
 		HttpAdminService httpAdminService = (HttpAdminService) httpAdminServiceTracker.getService();
 		assertNotNull(httpAdminService);
 
-		Map<String, String> serviceProperties = new HashMap<String, String>();
-		serviceProperties.put("external.http.service", "false");
-		HttpServerInstance internalServerInstance = httpAdminService
-				.createHttpServer("internal")
-				.serviceProperties(serviceProperties).port(9090).start();
-
+		// Setup server via jetty XML configuration
+		String jettyConfigurationTemplate = "/org/eclipselabs/osgihttpserviceutils/httpservice/test/jetty.xml";
+		InputStream resourceAsStream = getClass().getResourceAsStream(jettyConfigurationTemplate);
+		String tmpDir = System.getProperty("java.io.tmpdir");
+		IOUtils.copy(resourceAsStream, new FileOutputStream(new File(tmpDir, "jetty-sample-jetty.xml")));
+		System.setProperty("jetty.server.configuration.directory", tmpDir);
+		HttpServerInstance internalServerInstance = httpAdminService.createHttpServer("jetty-sample").start();
+		
+		// Verify that the port is 8080 not 8090
+		HttpClient httpClient = new HttpClient();
+		GetMethod externalRequest = new GetMethod("http://localhost:8080");
+		assertEquals("Port must be 8080 because of customize.", 404, httpClient.executeMethod(externalRequest));
+		
 		internalServerInstance.shutdown();
 		httpAdminServiceTracker.close();
 	}
