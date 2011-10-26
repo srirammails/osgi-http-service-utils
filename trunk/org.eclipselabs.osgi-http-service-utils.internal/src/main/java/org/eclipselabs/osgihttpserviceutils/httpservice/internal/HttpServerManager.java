@@ -132,17 +132,13 @@ public class HttpServerManager implements ManagedServiceFactory {
 							try {
 								interceptor.beforeRequest();
 							} catch (Exception exp) {
-								LOG.warn(
-										"A exception was thrown on invoking a request interceptor",
-										exp);
+								LOG.warn("A exception was thrown on invoking a request interceptor", exp);
 								throw new HttpServiceInternalException(exp);
 							}
 						}
 					}
 				} catch (Exception exp) {
-					LOG.warn(
-							"A exception was thrown on invoking a request interceptor",
-							exp);
+					LOG.warn("A exception was thrown on invoking a request interceptor", exp);
 					throw new HttpServiceInternalException(exp);
 				}
 				try {
@@ -156,17 +152,13 @@ public class HttpServerManager implements ManagedServiceFactory {
 							try {
 								interceptor.afterRequest();
 							} catch (Exception exp) {
-								LOG.warn(
-										"A exception was thrown on invoking a interceptor after request.",
-										exp);
+								LOG.warn("A exception was thrown on invoking a interceptor after request.", exp);
 								throw new HttpServiceInternalException(exp);
 							}
 						}
 					}
 				} catch (Exception exp) {
-					LOG.warn(
-							"A exception was thrown on invoking a interceptor after request.",
-							exp);
+					LOG.warn("A exception was thrown on invoking a interceptor after request.", exp);
 					throw new HttpServiceInternalException(exp);
 				}
 			} finally {
@@ -295,13 +287,11 @@ public class HttpServerManager implements ManagedServiceFactory {
 				+ dictionary.get(Constants.SERVICE_PID).hashCode());
 		if (contextWorkDir.mkdir()) {
 			LOG.debug(
-					method
-							+ "create a directory {} as working directory for the HTTP server.",
+					method + "create a directory {} as working directory for the HTTP server.",
 					contextWorkDir.getAbsolutePath());
 		} else {
 			LOG.debug(
-					method
-							+ "directory {} already exists which will be used as working directory for the HTTP server.",
+					method + "directory {} already exists which will be used as working directory for the HTTP server.",
 					contextWorkDir.getAbsolutePath());
 		}
 
@@ -311,8 +301,7 @@ public class HttpServerManager implements ManagedServiceFactory {
 		Integer sessionInactiveInterval = (Integer) dictionary
 				.get(JettyConstants.CONTEXT_SESSIONINACTIVEINTERVAL);
 		if (sessionInactiveInterval != null) {
-			sessionManager.setMaxInactiveInterval(sessionInactiveInterval
-					.intValue());
+			sessionManager.setMaxInactiveInterval(sessionInactiveInterval.intValue());
 		}
 
 		httpContext.setSessionHandler(new SessionHandler(sessionManager));
@@ -363,20 +352,15 @@ public class HttpServerManager implements ManagedServiceFactory {
 			if (needClientAuth instanceof String) {
 				needClientAuth = Boolean.valueOf((String) needClientAuth);
 			}
-
-			sslConnector.setNeedClientAuth(((Boolean) needClientAuth)
-					.booleanValue());
+			sslConnector.setNeedClientAuth(((Boolean) needClientAuth).booleanValue());
 		}
 
-		Object wantClientAuth = dictionary
-				.get(JettyConstants.SSL_WANTCLIENTAUTH);
+		Object wantClientAuth = dictionary.get(JettyConstants.SSL_WANTCLIENTAUTH);
 		if (wantClientAuth != null) {
 			if (wantClientAuth instanceof String) {
 				wantClientAuth = Boolean.valueOf((String) wantClientAuth);
 			}
-
-			sslConnector.setWantClientAuth(((Boolean) wantClientAuth)
-					.booleanValue());
+			sslConnector.setWantClientAuth(((Boolean) wantClientAuth).booleanValue());
 		}
 
 		String protocol = (String) dictionary.get(JettyConstants.SSL_PROTOCOL);
@@ -384,8 +368,7 @@ public class HttpServerManager implements ManagedServiceFactory {
 			sslConnector.setProtocol(protocol);
 		}
 
-		String keystoreType = (String) dictionary
-				.get(JettyConstants.SSL_KEYSTORETYPE);
+		String keystoreType = (String) dictionary.get(JettyConstants.SSL_KEYSTORETYPE);
 		if (keystoreType != null) {
 			sslConnector.setKeystoreType(keystoreType);
 		}
@@ -502,26 +485,26 @@ public class HttpServerManager implements ManagedServiceFactory {
 		Map props = (Map) dictionary.get("HTTP_SERVER_CUSTOM_SERVICE_PROPS");
 		for (Object key : props.keySet()) {
 			if (props.get(key) != null) {
-				holder.setInitParameter(key.toString(), props.get(key)
-						.toString());
+				holder.setInitParameter(key.toString(), props.get(key).toString());
 			}
 		}
 
 		if (dictionary.get("JETTY_XML_CONFIGURATION") != null) {
 			try {
-				File jettyConfiguration = JettyConfigurationUtils
-						.getConfigurationFile(serverName);
-				XmlConfiguration configuration = new XmlConfiguration(
-						new FileInputStream(jettyConfiguration));
+				File jettyConfiguration = JettyConfigurationUtils.getConfigurationFile(serverName);
+				XmlConfiguration configuration = new XmlConfiguration(new FileInputStream(jettyConfiguration));
 				configuration.configure(server);
+				if(customizer != null){
+					customizeServerConnectors(customizer, dictionary, server);
+				}
 			} catch (FileNotFoundException exp) {
-				LOG.error("Could not start the HTTP Server", exp);
+				LOG.error("Configuration file for the HTTP Server server was not found !", exp);
 			} catch (SAXException exp) {
-				LOG.error("Could not start the HTTP Server", exp);
+				LOG.error("Error parsing the HTTP Server configuration file.", exp);
 			} catch (IOException exp) {
-				LOG.error("Could not start the HTTP Server", exp);
+				LOG.error("Error loading the HTTP Server configuration file.", exp);
 			} catch (Exception exp) {
-				LOG.error("Could not start the HTTP Server", exp);
+				LOG.error("Could not read the HTTP Server configuration", exp);
 			}
 		} else {
 			Connector httpConnector = createHttpConnector(dictionary);
@@ -576,6 +559,21 @@ public class HttpServerManager implements ManagedServiceFactory {
 			throw new ConfigurationException(pid, e.getMessage(), e);
 		}
 		this.servers.put(pid, server);
+	}
+
+	private void customizeServerConnectors(JettyCustomizer customizer, Dictionary settings, Server server) {
+		Connector[] connectors = server.getConnectors();
+		if(connectors != null){
+			for (Connector connector : connectors) {
+				if (connector instanceof SslSocketConnector) {
+					SslSocketConnector httpsConnector = (SslSocketConnector) connector;
+					customizer.customizeHttpsConnector(httpsConnector, settings);
+				}
+				else {
+					customizer.customizeHttpConnector(connector, settings);
+				}
+			}
+		}
 	}
 
 	private JettyCustomizer createJettyCustomizer(Dictionary dictionary) {
