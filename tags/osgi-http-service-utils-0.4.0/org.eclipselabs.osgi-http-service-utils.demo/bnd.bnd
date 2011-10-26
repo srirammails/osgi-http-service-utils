@@ -1,0 +1,8 @@
+Bundle-SymbolicName: ${project.artifactId}
+Private-Package: org.eclipselabs.osgihttpserviceutils.httpservice.demo.httpadmin,\
+	org.eclipselabs.osgihttpserviceutils.httpservice.demo.requestinterceptor,\
+	org.eclipselabs.osgihttpserviceutils.httpservice.demo.httpservice
+Service-Component: org.eclipselabs.osgihttpserviceutils.httpservice.demo.httpadmin.HTTPAdminDemo,\
+	org.eclipselabs.osgihttpserviceutils.httpservice.demo.httpservice.HttpServiceDemo,\
+	org.eclipselabs.osgihttpserviceutils.httpservice.demo.requestinterceptor.HttpRequestInterceptorDemo
+Export-Package: org.eclipselabs.osgihttpserviceutils.httpservice.demo.customizer
