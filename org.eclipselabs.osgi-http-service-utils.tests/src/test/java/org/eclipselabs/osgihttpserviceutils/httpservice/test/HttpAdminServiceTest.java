@@ -51,12 +51,10 @@ public class HttpAdminServiceTest {
 	}
 
 	void setup() throws Exception {
-		httpAdminServiceTracker = new ServiceTracker(bundleContext,
-				HttpAdminService.class.getName(), null);
+		httpAdminServiceTracker = new ServiceTracker(bundleContext, HttpAdminService.class.getName(), null);
 		httpAdminServiceTracker.waitForService(3000);
 		httpAdminServiceTracker.open();
-		httpAdminService = (HttpAdminService) httpAdminServiceTracker
-				.getService();
+		httpAdminService = (HttpAdminService) httpAdminServiceTracker.getService();
 		assertNotNull(httpAdminService);
 
 		// Setup server port direct in Java code
@@ -71,14 +69,11 @@ public class HttpAdminServiceTest {
 				.serviceProperty("external.http.service", "true").start();
 
 		// Setup server via jetty XML configuration
-		InputStream resourceAsStream = getClass().getResourceAsStream(
-				"jetty.xml");
+		InputStream resourceAsStream = getClass().getResourceAsStream("jetty.xml");
 		String tmpDir = System.getProperty("java.io.tmpdir");
-		IOUtils.copy(resourceAsStream, new FileOutputStream(new File(tmpDir,
-				"jetty-sample-jetty.xml")));
+		IOUtils.copy(resourceAsStream, new FileOutputStream(new File(tmpDir, "jetty-sample-jetty.xml")));
 		System.setProperty("jetty.server.configuration.directory", tmpDir);
-		jettyXmlServerInstance = httpAdminService.createHttpServer(
-				"jetty-sample").start();
+		jettyXmlServerInstance = httpAdminService.createHttpServer("jetty-sample").start();
 	}
 
 	void tearDown() throws Exception {
@@ -89,8 +84,7 @@ public class HttpAdminServiceTest {
 	}
 
 	@Test
-	public void testCustomServiceProperty_External(BundleContext bundleContext)
-			throws Exception {
+	public void testCustomServiceProperty_External(BundleContext bundleContext) throws Exception {
 		this.bundleContext = bundleContext;
 		setup();
 		try {
@@ -112,8 +106,7 @@ public class HttpAdminServiceTest {
 	}
 
 	@Test
-	public void testCustomServiceProperty_Internal(BundleContext bundleContext)
-			throws Exception {
+	public void testCustomServiceProperty_Internal(BundleContext bundleContext) throws Exception {
 		this.bundleContext = bundleContext;
 		setup();
 		try {
@@ -135,8 +128,7 @@ public class HttpAdminServiceTest {
 	}
 
 	@Test
-	public void testInternalAndExternalHttpService(BundleContext bundleContext)
-			throws Exception {
+	public void testInternalAndExternalHttpService(BundleContext bundleContext) throws Exception {
 		this.bundleContext = bundleContext;
 		setup();
 		try {
@@ -157,8 +149,7 @@ public class HttpAdminServiceTest {
 	}
 
 	@Test
-	public void testShutdownHttpServer(BundleContext bundleContext)
-			throws Exception {
+	public void testShutdownHttpServer(BundleContext bundleContext) throws Exception {
 		this.bundleContext = bundleContext;
 		setup();
 		try {
